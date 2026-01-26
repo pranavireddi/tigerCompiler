@@ -16,11 +16,11 @@ val commentNestingDepth = ref 0
 
 <COMMENTS, INITIAL> \n	=> (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
 <COMMENTS, INITIAL>[ \t\r]+	=> (continue());
-<COMMENTS>.    => (continue());
 
 <INITIAL>"/*"	=> (commentNestingDepth := 1; YYBEGIN COMMENTS; continue());
 <COMMENTS>"/*"	=> (commentNestingDepth := !commentNestingDepth + 1; continue());
 <COMMENTS>"*/"	=> (commentNestingDepth := !commentNestingDepth - 1; if !commentNestingDepth = 0 then (YYBEGIN INITIAL; continue()) else continue());
+<COMMENTS>.    => (continue());
 
 <INITIAL>"type"	=> (Tokens.TYPE(yypos,yypos+4));
 <INITIAL>"var"	=> (Tokens.VAR(yypos,yypos+3));
@@ -65,4 +65,4 @@ val commentNestingDepth = ref 0
 <INITIAL>[0-9]+ => (Tokens.INT(valOf(Int.fromString(yytext)), yypos, yypos+size yytext));
 <INITIAL>[a-zA-Z_][a-zA-Z0-9_]* => (Tokens.ID(yytext, yypos, yypos+size yytext));
 
-.       => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
+<INITIAL>.       => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
