@@ -5,17 +5,21 @@ type lexresult = Tokens.token
 val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
 fun err(p1,p2) = ErrorMsg.error p1
-
-fun eof() = let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end
-
 val commentNestingDepth = ref 0
+
+fun eof() = let val pos = hd(!linePos) in
+    if !commentNestingDepth <> 0 then
+        (ErrorMsg.error pos "Unenclosed comment"; commentNestingDepth := 0)
+    else ();
+    Tokens.EOF(pos,pos)
+end
 
 %% 
 %s COMMENTS;
 %%
 
-<COMMENTS, INITIAL> \n	=> (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
-<COMMENTS, INITIAL>[ \t\r]+	=> (continue());
+<COMMENTS,INITIAL> \n	=> (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
+<COMMENTS,INITIAL>[ \t\r]+	=> (continue());
 
 <INITIAL>"/*"	=> (commentNestingDepth := 1; YYBEGIN COMMENTS; continue());
 <COMMENTS>"/*"	=> (commentNestingDepth := !commentNestingDepth + 1; continue());

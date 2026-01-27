@@ -1,6 +1,6 @@
 type var function break of end in nil let do to for while else then if array
 
-:=|&>=><=<><=+- .}{][)(;:,  !@
+:=|&>=><=<><+- .}{][)(;:,  !@
 
 _ _a A aZ09_ foo bar123 _x9 A_B9 typex array1 in2
 
@@ -13,4 +13,5 @@ arr[0]:=x.y
 <> <= >= < >
 
 /* LOLOLOLOL */
-
+/* !!..@ */
+/* unenclosed
