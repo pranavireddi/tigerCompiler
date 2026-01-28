@@ -13,12 +13,13 @@ arr[0]:=x.y
 <> <= >= < >
 "Closed string"
 
-"hello \ \n
-    world \
-    hihi "
+"hello \ world \ hihi "
 
-"Not closed comment"
+"\*"
+
+"Not closed string
 
 /* LOLOLOLOL */
 /* !!..@ */
 /* unenclosed comment
+

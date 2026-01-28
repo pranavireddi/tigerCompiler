@@ -41,7 +41,7 @@ fun eof() =
 
 <INITIAL>"\"" => (stringBuf := ""; stringStartPos := yypos; inString := true; YYBEGIN STRING; continue());
 <STRING>"\"" => (inString := false; YYBEGIN INITIAL; Tokens.STRING(!stringBuf, !stringStartPos, yypos+1));
-<STRING>\\([ \t\r\f]|\n)+\\ => (
+<STRING>\\\n[ \t\r\f]*\\ => (
     let 
         fun countNewLines(s, count) = 
             if String.size s = 0 then count
@@ -81,6 +81,7 @@ fun eof() =
             (stringBuf := !stringBuf ^ str (Char.chr code); continue())
     end
 );
+<STRING>"\\"[^\n] => (ErrorMsg.error yypos ("illegal escape sequence " ^ yytext); stringBuf := !stringBuf ^ str(String.sub(yytext, 1)); continue());
 <STRING>[^\n\\\\\"]+ => (stringBuf := !stringBuf ^ yytext; continue());
 
 
