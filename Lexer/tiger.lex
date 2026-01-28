@@ -6,11 +6,25 @@ val lineNum = ErrorMsg.lineNum
 val linePos = ErrorMsg.linePos
 fun err(p1,p2) = ErrorMsg.error p1
 
-fun eof() = let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end
-
 val commentNestingDepth = ref 0
 val stringBuf = ref ""
 val stringStartPos = ref 0
+val inString = ref false
+
+fun eof() = 
+    let 
+        val pos = hd(!linePos) 
+    in 
+        if !inString then
+            (ErrorMsg.error (!stringStartPos) "unterminated string"; 
+            inString := false; 
+            Tokens.STRING(!stringBuf, !stringStartPos, pos))
+        else if !commentNestingDepth > 0 then
+            (ErrorMsg.error pos "unclosed comment";
+             Tokens.EOF(pos,pos))
+        else
+            Tokens.EOF(pos,pos) 
+    end
 
 %% 
 %s COMMENTS STRING;
@@ -25,8 +39,8 @@ val stringStartPos = ref 0
 <COMMENTS>"*/"	=> (commentNestingDepth := !commentNestingDepth - 1; if !commentNestingDepth = 0 then (YYBEGIN INITIAL; continue()) else continue());
 <COMMENTS>.    => (continue());
 
-<INITIAL>"\"" => (stringBuf := ""; stringStartPos := yypos; YYBEGIN STRING; continue());
-<STRING>"\"" => (YYBEGIN INITIAL; Tokens.STRING(!stringBuf, !stringStartPos, yypos+1));
+<INITIAL>"\"" => (stringBuf := ""; stringStartPos := yypos; inString := true; YYBEGIN STRING; continue());
+<STRING>"\"" => (inString := false; YYBEGIN INITIAL; Tokens.STRING(!stringBuf, !stringStartPos, yypos+1));
 <STRING>"\\n" => (stringBuf := !stringBuf ^ "\n"; continue());
 <STRING>"\\t" => (stringBuf := !stringBuf ^ "\t"; continue());
 <STRING>"\\\"" => (stringBuf := !stringBuf ^ "\""; continue());
@@ -49,7 +63,6 @@ val stringStartPos = ref 0
             (stringBuf := !stringBuf ^ str (Char.chr code); continue())
     end
 );
-<STRING><<EOF>> => (ErrorMsg.error (!stringStartPos) "unterminated string"; Tokens.STRING(!stringBuf, !stringStartPos, yypos));
 <STRING>[^\n\\\\\"]+ => (stringBuf := !stringBuf ^ yytext; continue());
 
 
