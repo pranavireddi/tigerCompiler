@@ -92,6 +92,7 @@ val stringStartPos = ref 0
 <INITIAL>";"	=> (Tokens.SEMICOLON(yypos,yypos+1));
 <INITIAL>":"	=> (Tokens.COLON(yypos,yypos+1));
 <INITIAL>","	=> (Tokens.COMMA(yypos,yypos+1));
+<INITIAL>"."    => (Tokens.DOT(yypos,yypos+1));
 
 <INITIAL>[0-9]+ => (Tokens.INT(valOf(Int.fromString(yytext)), yypos, yypos+size yytext));
 <INITIAL>[a-zA-Z_][a-zA-Z0-9_]* => (Tokens.ID(yytext, yypos, yypos+size yytext));
