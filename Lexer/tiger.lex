@@ -41,7 +41,23 @@ fun eof() =
 
 <INITIAL>"\"" => (stringBuf := ""; stringStartPos := yypos; inString := true; YYBEGIN STRING; continue());
 <STRING>"\"" => (inString := false; YYBEGIN INITIAL; Tokens.STRING(!stringBuf, !stringStartPos, yypos+1));
-<STRING>\n => (stringBuf := !stringBuf ^ "\n"; continue());
+<STRING>\\([ \t\r\f]|\n)+\\ => (
+CM.make("sources.cm");    let 
+        fun countNewLines(s, count) = 
+            if String.size s = 0 then count
+            else if String.sub(s, 0) = #"\n" then 
+                countNewLines(String.extract(s, 1, NONE), count + 1)
+            else 
+                countNewLines(String.extract(s, 1, NONE), count)
+        val formatChars = String.substring(yytext, 1, size yytext - 2)
+        val newlineCount = countNewLines(formatChars, 0)
+    in 
+        lineNum := !lineNum + newlineCount;
+        linePos := yypos :: !linePos;
+        continue()
+    end
+);
+<STRING>\n => (stringBuf := !stringBuf ^ "\n"; lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
 <STRING>"\\n" => (stringBuf := !stringBuf ^ "\n"; continue());
 <STRING>"\\t" => (stringBuf := !stringBuf ^ "\t"; continue());
 <STRING>"\\\"" => (stringBuf := !stringBuf ^ "\""; continue());
