@@ -41,6 +41,7 @@ fun eof() =
 
 <INITIAL>"\"" => (stringBuf := ""; stringStartPos := yypos; inString := true; YYBEGIN STRING; continue());
 <STRING>"\"" => (inString := false; YYBEGIN INITIAL; Tokens.STRING(!stringBuf, !stringStartPos, yypos+1));
+<STRING>\n => (stringBuf := !stringBuf ^ "\n"; continue());
 <STRING>"\\n" => (stringBuf := !stringBuf ^ "\n"; continue());
 <STRING>"\\t" => (stringBuf := !stringBuf ^ "\t"; continue());
 <STRING>"\\\"" => (stringBuf := !stringBuf ^ "\""; continue());
