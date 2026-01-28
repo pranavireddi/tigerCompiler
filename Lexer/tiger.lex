@@ -71,7 +71,7 @@ fun eof() =
         continue()
     end
 );
-<STRING>"\\[0-9][0-9][0-9]" => (
+<STRING>\\[0-9][0-9][0-9] => (
     let 
         val code = valOf(Int.fromString(substring(yytext, 1, 3)))
     in
