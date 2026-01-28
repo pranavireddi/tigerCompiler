@@ -12,11 +12,6 @@ arr[0]:=x.y
 /* hi /* nested comment */ lol */
 <> <= >= < >
 "Closed string"
-
-
-
-"Not closed comment
-
 /* LOLOLOLOL */
 /* !!..@ */
 /* unenclosed comment

@@ -39,10 +39,13 @@ fun eof() =
 <COMMENTS>"*/"	=> (commentNestingDepth := !commentNestingDepth - 1; if !commentNestingDepth = 0 then (YYBEGIN INITIAL; continue()) else continue());
 <COMMENTS>.    => (continue());
 
+<STRING>\n => (stringBuf := !stringBuf ^ "\n"; continue());
+
 <INITIAL>"\"" => (stringBuf := ""; stringStartPos := yypos; inString := true; YYBEGIN STRING; continue());
 <STRING>"\"" => (inString := false; YYBEGIN INITIAL; Tokens.STRING(!stringBuf, !stringStartPos, yypos+1));
 <STRING>"\\n" => (stringBuf := !stringBuf ^ "\n"; continue());
 <STRING>"\\t" => (stringBuf := !stringBuf ^ "\t"; continue());
+<STRING>"\\r" => (stringBuf := !stringBuf ^ "\r"; continue());
 <STRING>"\\\"" => (stringBuf := !stringBuf ^ "\""; continue());
 <STRING>"\\\\" => (stringBuf := !stringBuf ^ "\\" ; continue());
 <STRING>"\\\^[A-Z]" => (
@@ -111,4 +114,3 @@ fun eof() =
 <INITIAL>[a-zA-Z_][a-zA-Z0-9_]* => (Tokens.ID(yytext, yypos, yypos+size yytext));
 
 <INITIAL>.       => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
-
