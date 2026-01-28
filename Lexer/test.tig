@@ -12,6 +12,20 @@ arr[0]:=x.y
 /* hi /* nested comment */ lol */
 <> <= >= < >
 
+"\065"
+"\102"
+"hello\     
+\world"
+"hello\
+\world"
+
+"hello
+world"
+
+"\\"
+"\""
+a := /* inline */ 3;
+
 /* LOLOLOLOL */
 /* !!..@ */
 /* unenclosed
