@@ -42,7 +42,7 @@ fun eof() =
 <INITIAL>"\"" => (stringBuf := ""; stringStartPos := yypos; inString := true; YYBEGIN STRING; continue());
 <STRING>"\"" => (inString := false; YYBEGIN INITIAL; Tokens.STRING(!stringBuf, !stringStartPos, yypos+1));
 <STRING>\\([ \t\r\f]|\n)+\\ => (
-CM.make("sources.cm");    let 
+    let 
         fun countNewLines(s, count) = 
             if String.size s = 0 then count
             else if String.sub(s, 0) = #"\n" then 
@@ -60,6 +60,7 @@ CM.make("sources.cm");    let
 <STRING>\n => (stringBuf := !stringBuf ^ "\n"; lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
 <STRING>"\\n" => (stringBuf := !stringBuf ^ "\n"; continue());
 <STRING>"\\t" => (stringBuf := !stringBuf ^ "\t"; continue());
+<STRING>"\\r" => (stringBuf := !stringBuf ^ "\r"; continue());
 <STRING>"\\\"" => (stringBuf := !stringBuf ^ "\""; continue());
 <STRING>"\\\\" => (stringBuf := !stringBuf ^ "\\" ; continue());
 <STRING>"\\\^[A-Z]" => (
@@ -128,4 +129,3 @@ CM.make("sources.cm");    let
 <INITIAL>[a-zA-Z_][a-zA-Z0-9_]* => (Tokens.ID(yytext, yypos, yypos+size yytext));
 
 <INITIAL>.       => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
-
