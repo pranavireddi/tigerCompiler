@@ -9,9 +9,12 @@ fun err(p1,p2) = ErrorMsg.error p1
 fun eof() = let val pos = hd(!linePos) in Tokens.EOF(pos,pos) end
 
 val commentNestingDepth = ref 0
+val stringBuf = ref ""
+val stringStartPos = ref 0
 
 %% 
-%s COMMENTS;
+%s COMMENTS STRING;
+
 %%
 
 <COMMENTS, INITIAL> \n	=> (lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
@@ -21,6 +24,34 @@ val commentNestingDepth = ref 0
 <COMMENTS>"/*"	=> (commentNestingDepth := !commentNestingDepth + 1; continue());
 <COMMENTS>"*/"	=> (commentNestingDepth := !commentNestingDepth - 1; if !commentNestingDepth = 0 then (YYBEGIN INITIAL; continue()) else continue());
 <COMMENTS>.    => (continue());
+
+<INITIAL>"\"" => (stringBuf := ""; stringStartPos := yypos; YYBEGIN STRING; continue());
+<STRING>"\"" => (YYBEGIN INITIAL; Tokens.STRING(!stringBuf, !stringStartPos, yypos+1));
+<STRING>"\\n" => (stringBuf := !stringBuf ^ "\n"; continue());
+<STRING>"\\t" => (stringBuf := !stringBuf ^ "\t"; continue());
+<STRING>"\\\"" => (stringBuf := !stringBuf ^ "\""; continue());
+<STRING>"\\\\" => (stringBuf := !stringBuf ^ "\\" ; continue());
+<STRING>"\\\^[A-Z]" => (
+    let 
+        val c = Char.chr (Char.ord (String.sub(yytext, 2)) - Char.ord #"@")
+    in
+        stringBuf := !stringBuf ^ str c;
+        continue()
+    end
+);
+<STRING>"\\[0-9][0-9][0-9]" => (
+    let 
+        val code = valOf(Int.fromString(substring(yytext, 1, 3)))
+    in
+        if code > 255 then
+            (ErrorMsg.error yypos "ASCII code out of range"; continue())
+        else 
+            (stringBuf := !stringBuf ^ str (Char.chr code); continue())
+    end
+);
+<STRING><<EOF>> => (ErrorMsg.error (!stringStartPos) "unterminated string"; Tokens.STRING(!stringBuf, !stringStartPos, yypos));
+<STRING>[^\n\\\\\"]+ => (stringBuf := !stringBuf ^ yytext; continue());
+
 
 <INITIAL>"type"	=> (Tokens.TYPE(yypos,yypos+4));
 <INITIAL>"var"	=> (Tokens.VAR(yypos,yypos+3));
@@ -66,3 +97,4 @@ val commentNestingDepth = ref 0
 <INITIAL>[a-zA-Z_][a-zA-Z0-9_]* => (Tokens.ID(yytext, yypos, yypos+size yytext));
 
 <INITIAL>.       => (ErrorMsg.error yypos ("illegal character " ^ yytext); continue());
+
