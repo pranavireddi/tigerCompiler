@@ -11,6 +11,27 @@ arr[0]:=x.y
 ( ) [ ] { } , ; :
 /* hi /* nested comment */ lol */
 <> <= >= < >
+"Closed string"
+
+"hello \ world \ hihi "
+
+"hello
+world"
+
+"legal ddd \065"
+"testing illegal ddd \266"
+
+"ctrl c \^I"
+"multi \
+\line \
+\sequence"
+
+"This is a very long \
+    \string that is split \
+    \across lines."
+
+
+"Not closed string
 
 "\065"
 "\102"

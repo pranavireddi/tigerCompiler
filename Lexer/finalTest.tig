@@ -1,0 +1,79 @@
+type var function break of end in nil let do to for while else then if array
+
+:= | & >= > <= < <> = + - * / . { } [ ] ( ) ; : ,
+
+_
+_a
+A
+aZ09_
+foo
+bar123
+_x9
+A_B9
+typex
+array1
+in2
+
+0
+7
+42
+1234567890
+007
+
+a := b + 42 * (c - 7);
+arr[0] := x.y;
+
+/* simple comment */
+/* comment with /* nested */ comment */
+/* multiple /* nested /* levels */ of */ nesting */
+
+"hello world"
+"empty is next"
+""
+"with spaces   and   tabs	here"
+
+"newline\ncharacter"
+"tab\there"
+"carriage\rreturn"
+"quote\"inside"
+"backslash\\"
+"control A \^A"
+"control C \^C"
+"control I \^I"
+"control Z \^Z"
+
+"65 is \065"
+"0 is \000"
+"255 is \255"
+"9 is \009"
+
+"multiline\
+\string"
+"with\
+\    \
+\    \newlines"
+"hello \
+    \world"
+"This is a very long \
+    \string that is split \
+    \across lines."
+
+
+
+let
+    type rectype = {name:string, age:int}
+    var rec1:rectype := rectype {name="Bob", age=42}
+in
+    rec1.name := "Alice";
+    rec1
+end
+
+let
+    var x : int := 5
+    var y : string := "hello"
+in
+    if x > 0 then
+        y := "positive"
+    else
+        y := "not positive"
+end
