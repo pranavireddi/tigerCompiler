@@ -57,17 +57,19 @@ fun eof() =
         continue()
     end
 );
-<STRING>\n => (stringBuf := !stringBuf ^ "\n"; lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
+<STRING>\n => (ErrorMsg.error yypos "Unenclosed string (newline in string)"; inString := false; lineNum := !lineNum+1; linePos := yypos :: !linePos; YYBEGIN INITIAL; Tokens.STRING(!stringBuf, !stringStartPos, yypos));
 <STRING>"\\n" => (stringBuf := !stringBuf ^ "\n"; continue());
 <STRING>"\\t" => (stringBuf := !stringBuf ^ "\t"; continue());
 <STRING>"\\r" => (stringBuf := !stringBuf ^ "\r"; continue());
 <STRING>"\\\"" => (stringBuf := !stringBuf ^ "\""; continue());
 <STRING>"\\\\" => (stringBuf := !stringBuf ^ "\\" ; continue());
-<STRING>"\\\^[A-Z]" => (
+<STRING>\\\^[A-Z] => (
     let 
-        val c = Char.chr (Char.ord (String.sub(yytext, 2)) - Char.ord #"@")
+        val letter = String.sub(yytext, 2)
+        val code = Char.ord letter - Char.ord #"@"
+        val c = Char.chr code
     in
-        stringBuf := !stringBuf ^ str c;
+        stringBuf := !stringBuf ^ (str c);
         continue()
     end
 );
@@ -85,9 +87,9 @@ fun eof() =
 <STRING>[^\n\\\\\"]+ => (stringBuf := !stringBuf ^ yytext; continue());
 
 
-<INITIAL>"type"	=> (Tokens.TYPE(yypos,yypos+4));
-<INITIAL>"var"	=> (Tokens.VAR(yypos,yypos+3));
-<INITIAL>"function"	=> (Tokens.FUNCTION(yypos,yypos+8));
+<INITIAL>type	=> (Tokens.TYPE(yypos,yypos+4));
+<INITIAL>var	=> (Tokens.VAR(yypos,yypos+3));
+<INITIAL>function	=> (Tokens.FUNCTION(yypos,yypos+8));
 <INITIAL>"break"	=> (Tokens.BREAK(yypos,yypos+5));
 <INITIAL>"of"	=> (Tokens.OF(yypos,yypos+2));
 <INITIAL>"end"	=> (Tokens.END(yypos,yypos+3));

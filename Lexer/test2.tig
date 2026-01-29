@@ -14,4 +14,4 @@ arr[0]:=x.y
 "Closed string"
 /* LOLOLOLOL */
 /* !!..@ */
-/* unenclosed comment
+"unclosed string at eof

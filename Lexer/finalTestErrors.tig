@@ -1,0 +1,35 @@
+"unterminated string
+
+"string with
+actual newline"
+
+"invalid escape \x"
+"invalid escape \q"
+"another bad \w escape"
+
+"octal too high \266"
+"octal too high \999"
+"octal too high \500"
+
+!
+@
+#
+$
+%
+^
+`
+~
+
+"""""" 
+"" "" ""
+_____________________________________________________
+
+let var x : int := 5 in x end
+"good string"
+"bad string with newline
+more code
+
+/* unclosed comment
+let x = 5;
+
+/* level1 /* level2 /* level3
