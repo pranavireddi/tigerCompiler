@@ -41,45 +41,7 @@ fun eof() =
 
 <INITIAL>"\"" => (stringBuf := ""; stringStartPos := yypos; inString := true; YYBEGIN STRING; continue());
 <STRING>"\"" => (inString := false; YYBEGIN INITIAL; Tokens.STRING(!stringBuf, !stringStartPos, yypos+1));
-<<<<<<< HEAD
-<STRING>\n => (stringBuf := !stringBuf ^ "\n"; lineNum := !lineNum+1; linePos := yypos :: !linePos; continue());
-<STRING>"\\n" => (stringBuf := !stringBuf ^ "\n"; continue());
-<STRING>"\\t" => (stringBuf := !stringBuf ^ "\t"; continue());
-<STRING>"\\r" => (stringBuf := !stringBuf ^ "\r"; continue());
-<STRING>"\\\"" => (stringBuf := !stringBuf ^ "\""; continue());
-<STRING>"\\\\" => (stringBuf := !stringBuf ^ "\\" ; continue());
-<STRING>"\\"[\n \t\r\f]*"\\" => (
-=======
-<STRING>\\\n[ \t\r\f]*\\ => (
->>>>>>> origin/main
-    let 
-        fun countNewLines(s, count) = 
-            if String.size s = 0 then count
-            else if String.sub(s, 0) = #"\n" then 
-                countNewLines(String.extract(s, 1, NONE), count + 1)
-            else 
-                countNewLines(String.extract(s, 1, NONE), count)
-        val formatChars = String.substring(yytext, 1, size yytext - 2)
-        val newlineCount = countNewLines(formatChars, 0)
-    in 
-        lineNum := !lineNum + newlineCount;
-        linePos := yypos :: !linePos;
-        continue()
-    end
-);
-<<<<<<< HEAD
-<STRING>"\\\^"[A-Z] => (
-    let 
-        val c = Char.chr (Char.ord (String.sub(yytext, 2)) - Char.ord #"@")
-    in
-        stringBuf := !stringBuf ^ str c;
-        continue()
-    end
-);
-<STRING>"\\"[0-9][0-9][0-9] => (
-    let 
-        val code = valOf(Int.fromString(String.substring(yytext, 1, 3)))
-=======
+
 <STRING>\n => (ErrorMsg.error yypos "Unenclosed string (newline in string)"; inString := false; lineNum := !lineNum+1; linePos := yypos :: !linePos; YYBEGIN INITIAL; Tokens.STRING(!stringBuf, !stringStartPos, yypos));
 <STRING>"\\n" => (stringBuf := !stringBuf ^ "\n"; continue());
 <STRING>"\\t" => (stringBuf := !stringBuf ^ "\t"; continue());
@@ -96,34 +58,41 @@ fun eof() =
         continue()
     end
 );
+
+<STRING>\\[\n \t\r\f]*\\ => (
+    let 
+        fun countNewLines(s, count) = 
+            if String.size s = 0 then count
+            else if String.sub(s, 0) = #"\n" then 
+                countNewLines(String.extract(s, 1, NONE), count + 1)
+            else 
+                countNewLines(String.extract(s, 1, NONE), count)
+        val formatChars = String.substring(yytext, 1, size yytext - 2)
+        val newlineCount = countNewLines(formatChars, 0)
+    in 
+        lineNum := !lineNum + newlineCount;
+        linePos := yypos :: !linePos;
+        continue()
+    end
+);
+
 <STRING>\\[0-9][0-9][0-9] => (
     let 
         val code = valOf(Int.fromString(substring(yytext, 1, 3)))
->>>>>>> origin/main
     in
         if code > 255 then
             (ErrorMsg.error yypos "ASCII code out of range"; continue())
         else 
-<<<<<<< HEAD
-            (stringBuf := !stringBuf ^ Char.toString (Char.chr code); continue())
-=======
             (stringBuf := !stringBuf ^ str (Char.chr code); continue())
->>>>>>> origin/main
     end
 );
 <STRING>"\\"[^\n] => (ErrorMsg.error yypos ("illegal escape sequence " ^ yytext); stringBuf := !stringBuf ^ str(String.sub(yytext, 1)); continue());
 <STRING>[^\n\\\\\"]+ => (stringBuf := !stringBuf ^ yytext; continue());
 
 
-<<<<<<< HEAD
-<INITIAL>"type"	=> (Tokens.TYPE(yypos,yypos+4));
-<INITIAL>"var"	=> (Tokens.VAR(yypos,yypos+3));
-<INITIAL>"function"	=> (Tokens.FUNCTION(yypos,yypos+8));
-=======
 <INITIAL>type	=> (Tokens.TYPE(yypos,yypos+4));
 <INITIAL>var	=> (Tokens.VAR(yypos,yypos+3));
 <INITIAL>function	=> (Tokens.FUNCTION(yypos,yypos+8));
->>>>>>> origin/main
 <INITIAL>"break"	=> (Tokens.BREAK(yypos,yypos+5));
 <INITIAL>"of"	=> (Tokens.OF(yypos,yypos+2));
 <INITIAL>"end"	=> (Tokens.END(yypos,yypos+3));
