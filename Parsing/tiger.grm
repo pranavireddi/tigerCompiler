@@ -5,13 +5,16 @@
   | INT of int | STRING of string 
   | COMMA | COLON | SEMICOLON | LPAREN | RPAREN | LBRACK | RBRACK 
   | LBRACE | RBRACE | DOT 
-  | PLUS | MINUS | TIMES | DIVIDE | EQ | NEQ | LT | LE | GT | GE
+  | PLUS | MINUS | TIMES | DIVIDE | EQ | NEQ | LT | LE | GT | GE | UNARYMINUS
   | AND | OR | ASSIGN
   | ARRAY | IF | THEN | ELSE | WHILE | FOR | TO | DO | LET | IN | END | OF 
   | BREAK | NIL
   | FUNCTION | VAR | TYPE 
 
-%nonterm  exp | program
+%nonterm  exp | program | expseq | lvalue | function_call | arithmetic_exp 
+         | comparison_exp | boolean_exp | record_creation | array_creation | conditional_exp | while_exp 
+         | for_exp | let_exp | decs | exp_list | dec | function_dec | param_list | param | var_dec 
+         | type_dec | record_type | field_list | field | array_type
 
 %pos int
 %verbose
@@ -30,9 +33,113 @@
 %value INT (1)
 %value STRING ("")
 
+%right UNARYMINUS
+%nonassoc EQ NEQ LT LE GT GE
+%left OR
+%left AND
+%left PLUS MINUS
+%left TIMES DIVIDE
+
 %%
 
 program	: exp				()
 
-	
-exp: 			()
+exp: lvalue ()
+    | NIL        ()
+    | INT				()
+    | STRING			()
+    | LPAREN expseq RPAREN		()
+    | LPAREN RPAREN    ()
+    | MINUS exp %prec UNARYMINUS      ()
+    | function_call		()
+    | arithmetic_exp		()
+    | comparison_exp		() 
+    | boolean_exp		()
+    | record_creation		()
+    | array_creation		()
+    | conditional_exp		()
+    | while_exp			()
+    | for_exp			()
+    | let_exp			()
+
+expseq : exp ()
+    | exp SEMICOLON expseq	()
+    | ()
+
+function_call : ID LPAREN RPAREN		()
+    | ID LPAREN exp_list RPAREN		()
+
+exp_list : exp				()
+    | exp COMMA exp_list		()
+    | ()
+
+arithmetic_exp : exp PLUS exp		()
+    | exp MINUS exp		()
+    | exp TIMES exp		()
+    | exp DIVIDE exp		()
+
+comparison_exp : exp EQ exp		()
+    | exp NEQ exp		()
+    | exp LT exp		()
+    | exp LE exp		()
+    | exp GT exp		()
+    | exp GE exp		()
+
+boolean_exp : exp AND exp ()
+    | exp OR exp		()
+
+(* NOTE: Need to fix record creation *)
+record_creation : LBRACE ID RBRACE	()
+
+
+array_creation : ID LBRACK exp RBRACK OF exp	()
+
+conditional_exp : IF exp THEN exp ELSE exp	()
+    | IF exp THEN exp		()
+
+while_exp : WHILE exp DO exp		()
+    | WHILE exp DO exp BREAK	()
+
+for_exp : FOR ID ASSIGN exp TO exp DO exp	()
+    | FOR ID ASSIGN exp TO exp DO exp BREAK	()
+
+let_exp : LET decs IN expseq END	()
+
+(* NOTE: need to group things to deal with mutual recursion *)
+
+decs : ()
+    | dec decs		()
+
+dec : function_dec			()
+    | var_dec			()
+    | type_dec			()
+
+function_dec : FUNCTION ID LPAREN RPAREN EQ exp ()
+            | FUNCTION ID LPAREN param_list RPAREN EQ exp ()
+            | FUNCTION ID LPAREN RPAREN COLON ID EQ exp ()
+            | FUNCTION ID LPAREN param_list RPAREN COLON ID EQ exp ()
+
+param_list : param			()
+    | param COMMA param_list		()
+param : ID COLON ID			()
+
+var_dec: VAR ID ASSIGN exp		()
+    | VAR ID COLON ID ASSIGN exp	()  
+
+type_dec: TYPE ID EQ ID		()
+    | TYPE ID EQ record_type	()
+    | TYPE ID EQ array_type		()
+
+record_type : LBRACE field_list RBRACE	()
+field_list : field			()
+    | field COMMA field_list		()
+field : ID COLON ID			()  
+
+array_type : ARRAY OF ID		()
+
+lvalue: ID ()
+    | lvalue DOT ID			()
+    | lvalue LBRACK exp RBRACK		()
+
+
+

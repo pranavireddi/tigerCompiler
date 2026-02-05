@@ -1,0 +1,7 @@
+let
+  var x := 1
+  type t = int
+  type intArray = array of int
+in
+  x
+end
