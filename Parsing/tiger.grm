@@ -40,6 +40,9 @@
   | let_inside 
   | fun_inside 
   | fun_options
+  | record_creation
+  | record_inside
+  | record_options
 
 %pos int
 %verbose
@@ -87,6 +90,7 @@ exp: lvalue ()
   | paren_exp ()
   
   | array_exp ()
+  | record_creation ()
 
   | let_exp ()
 
@@ -108,6 +112,13 @@ lvalue: ID ()
   | lvalue LBRACK exp RBRACK ()
 
 array_exp: ID LBRACK exp RBRACK OF exp ()
+
+record_creation: ID LBRACE record_inside RBRACE ()
+record_inside: ID EQ exp record_options ()
+  | ()
+
+record_options: COMMA ID EQ exp record_options ()
+  | ()
 
 paren_exp: LPAREN exp RPAREN ()
   | LPAREN exp SEMICOLON exp expseq RPAREN ()
