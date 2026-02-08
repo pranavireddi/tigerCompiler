@@ -24,6 +24,9 @@
   | for_exp
   | conditional_exp
   | array_exp
+  | record_exp
+  | record_field_list
+  | record_field
   | function_dec 
   | param_list 
   | param 
@@ -40,9 +43,6 @@
   | let_inside 
   | fun_inside 
   | fun_options
-  | record_creation
-  | record_inside
-  | record_options
 
 %pos int
 %verbose
@@ -90,15 +90,14 @@ exp: lvalue ()
   | paren_exp ()
   
   | array_exp ()
-  | record_creation ()
-
+  | record_exp ()
   | let_exp ()
 
   | function_call_exp ()
 
   | MINUS exp %prec UMINUS ()
   | arithmetic_exp ()
-  |comparison_exp ()
+  | comparison_exp ()
   | boolean_exp ()
 
   | conditional_exp ()
@@ -113,12 +112,15 @@ lvalue: ID ()
 
 array_exp: ID LBRACK exp RBRACK OF exp ()
 
-record_creation: ID LBRACE record_inside RBRACE ()
-record_inside: ID EQ exp record_options ()
-  | ()
+record_exp: 
+    ID LBRACE record_field_list RBRACE ()
+  | ID LBRACE RBRACE ()
 
-record_options: COMMA ID EQ exp record_options ()
-  | ()
+record_field_list: 
+    record_field ()
+  | record_field COMMA record_field_list ()
+
+record_field: ID EQ exp ()
 
 paren_exp: LPAREN exp RPAREN ()
   | LPAREN exp SEMICOLON exp expseq RPAREN ()
@@ -185,6 +187,7 @@ type_dec: TYPE ID EQ ID		()
     | TYPE ID EQ array_type		()
 
 record_type: LBRACE field_list RBRACE	()
+    | LBRACE RBRACE ()
 field_list: field			()
     | field COMMA field_list		()
 field: ID COLON ID			()  

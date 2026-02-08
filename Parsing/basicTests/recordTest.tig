@@ -1,0 +1,6 @@
+let
+  type point_record = { x:int, y:int }
+  var p := point_record { x = 3, y = 4 }
+in
+  p.x + p.y
+end
