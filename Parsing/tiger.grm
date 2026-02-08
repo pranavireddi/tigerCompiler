@@ -5,18 +5,41 @@
   | INT of int | STRING of string 
   | COMMA | COLON | SEMICOLON | LPAREN | RPAREN | LBRACK | RBRACK 
   | LBRACE | RBRACE | DOT 
-  | PLUS | MINUS | TIMES | DIVIDE | EQ | NEQ | LT | LE | GT | GE | UNARYMINUS
+  | PLUS | MINUS | UMINUS | TIMES | DIVIDE | EQ | NEQ | LT | LE | GT | GE
   | AND | OR | ASSIGN
   | ARRAY | IF | THEN | ELSE | WHILE | FOR | TO | DO | LET | IN | END | OF 
   | BREAK | NIL
   | FUNCTION | VAR | TYPE 
 
-%nonterm  exp | program | expseq | arithmetic_exp 
-         | comparison_exp | boolean_exp | record_creation | conditional_exp | while_exp 
-         | for_exp | let_exp | decs | exp_list | dec | function_dec | param_list | param | var_dec 
-         | type_dec | record_type | field_list | field | array_type | id_exp | id_options | lvalue_options
-         | or_exp | and_exp | rel_exp | add_exp | mul_exp | unary_exp | primary_exp | relop
-
+%nonterm
+    program
+  | exp
+  | lvalue
+  | decs 
+  | dec
+  | arithmetic_exp
+  | comparison_exp
+  | boolean_exp
+  | while_exp
+  | for_exp
+  | conditional_exp
+  | array_exp
+  | function_dec 
+  | param_list 
+  | param 
+  | var_dec 
+  | type_dec 
+  | record_type 
+  | field_list 
+  | field 
+  | array_type 
+  | expseq 
+  | let_exp 
+  | paren_exp 
+  | function_call_exp 
+  | let_inside 
+  | fun_inside 
+  | fun_options
 
 %pos int
 %verbose
@@ -26,8 +49,25 @@
 
 %name Tiger
 
+%nonassoc ASSIGN
+%nonassoc ID
+%nonassoc WHILE DO
+
+(* #NOTE: we always wanna read more if doing then or else bc cannot make decision yet *)
+%right THEN
+%right ELSE
+%nonassoc LBRACK RBRACK OF
+
+(* #NOTE: need to have OR lower precedence than AND *)
+%left OR
+%left AND
+%nonassoc EQ NEQ LT LE GT GE
+%left PLUS MINUS
+%left TIMES DIVIDE
+%left UMINUS
+
 %keyword WHILE FOR TO BREAK LET IN END FUNCTION VAR TYPE ARRAY IF THEN ELSE 
-	DO OF NIL
+         DO OF NIL
 
 %prefer THEN ELSE LPAREN
 
@@ -35,94 +75,96 @@
 %value INT (1)
 %value STRING ("")
 
-%right UNARYMINUS
-%nonassoc EQ NEQ LT LE GT GE
-%left OR
-%left AND
-%left PLUS MINUS
-%left TIMES DIVIDE
-
 %%
 
-program	: exp				()
+program: exp ()
 
-exp : or_exp ()
-    | record_creation ()
-    | conditional_exp ()
-    | while_exp ()
-    | for_exp ()
-    | let_exp ()
-    | BREAK ()
+exp: lvalue ()
+  | NIL ()
+  | INT ()
+  | STRING ()
+  | lvalue ASSIGN exp ()
+  | paren_exp ()
+  
+  | array_exp ()
 
-or_exp
-  : and_exp %prec OR ()
-  | or_exp OR and_exp ()
+  | let_exp ()
 
+  | function_call_exp ()
 
-and_exp
-  : rel_exp %prec AND ()
-  | and_exp AND rel_exp ()
+  | MINUS exp %prec UMINUS ()
+  | arithmetic_exp ()
+  |comparison_exp ()
+  | boolean_exp ()
 
+  | conditional_exp ()
+  | while_exp ()
+  | for_exp ()
+  | BREAK ()
 
-rel_exp
-  : add_exp %prec OR () 
-  | add_exp relop add_exp ()
+lvalue: ID ()
+  | lvalue DOT ID ()
+  | ID LBRACK exp RBRACK ()
+  | lvalue LBRACK exp RBRACK ()
 
+array_exp: ID LBRACK exp RBRACK OF exp ()
 
-relop
-  : EQ () | NEQ () | LT () | LE () | GT () | GE ()
-
-
-add_exp
-  : mul_exp %prec PLUS ()
-  | add_exp PLUS mul_exp ()
-  | add_exp MINUS mul_exp ()
-
-mul_exp
-  : unary_exp %prec TIMES ()
-  | mul_exp TIMES unary_exp ()
-  | mul_exp DIVIDE unary_exp ()
-
-
-unary_exp
-  : primary_exp ()
-  | MINUS unary_exp %prec UNARYMINUS ()
-
-primary_exp
-  : id_exp ()
-  | NIL () | INT () | STRING ()
-  | LPAREN expseq RPAREN ()
+paren_exp: LPAREN exp RPAREN ()
+  | LPAREN exp SEMICOLON exp expseq RPAREN ()
   | LPAREN RPAREN ()
 
-(* NOTE: Need to fix record creation *)
-record_creation : LBRACE ID RBRACE	()
+arithmetic_exp: exp PLUS exp ()
+  | exp MINUS exp ()
+  | exp TIMES exp ()
+  | exp DIVIDE exp ()
 
-conditional_exp : IF exp THEN exp ELSE exp	()
+comparison_exp: exp EQ exp		()
+    | exp NEQ exp		()
+    | exp LT exp		()
+    | exp LE exp		()
+    | exp GT exp		()
+    | exp GE exp		()
+
+boolean_exp: exp AND exp ()
+    | exp OR exp		()
+
+while_exp: WHILE exp DO exp		()
+
+for_exp: FOR ID ASSIGN exp TO exp DO exp	()
+
+conditional_exp: IF exp THEN exp ELSE exp	()
     | IF exp THEN exp		()
 
-while_exp : WHILE exp DO exp		()
+function_call_exp: ID LPAREN fun_inside RPAREN		()
 
-for_exp : FOR ID ASSIGN exp TO exp DO exp	()
+(* #NOTE: need similar logic to expseq for parsing function call arguments, since we need to be able to parse more if we see a comma, but also need to be able to stop if we see a right paren *)
+fun_inside: exp fun_options ()
+  | ()
 
-let_exp : LET decs IN expseq END	()
+fun_options: COMMA exp fun_options ()
+  | ()
+  
+let_exp: LET decs IN let_inside END () 
 
-(* NOTE: need to group things to deal with mutual recursion *)
-
-decs : ()
+(* #NOTE: weird issues with not parsing let correclty when just using expseq directly *)
+let_inside: exp expseq ()
+ | ()
+  
+decs: ()
     | dec decs		()
 
-dec : function_dec			()
+dec: function_dec			()
     | var_dec			()
     | type_dec			()
 
-function_dec : FUNCTION ID LPAREN RPAREN EQ exp ()
+function_dec: FUNCTION ID LPAREN RPAREN EQ exp ()
             | FUNCTION ID LPAREN param_list RPAREN EQ exp ()
             | FUNCTION ID LPAREN RPAREN COLON ID EQ exp ()
             | FUNCTION ID LPAREN param_list RPAREN COLON ID EQ exp ()
 
-param_list : param			()
+param_list: param			()
     | param COMMA param_list		()
-param : ID COLON ID			()
+param: ID COLON ID			()
 
 var_dec: VAR ID ASSIGN exp		()
     | VAR ID COLON ID ASSIGN exp	()  
@@ -131,26 +173,13 @@ type_dec: TYPE ID EQ ID		()
     | TYPE ID EQ record_type	()
     | TYPE ID EQ array_type		()
 
-record_type : LBRACE field_list RBRACE	()
-field_list : field			()
+record_type: LBRACE field_list RBRACE	()
+field_list: field			()
     | field COMMA field_list		()
-field : ID COLON ID			()  
+field: ID COLON ID			()  
 
-array_type : ARRAY OF ID		()
+array_type: ARRAY OF ID		()
 
-(* NOTE: need some way of grouping lvalues and id stuff to make sure we don't have shift reduce issues. *)
-
-id_exp : ID id_options ()
-
-id_options
-  : LPAREN exp_list RPAREN ()
-  | LBRACK exp RBRACK OF exp ()
-  | lvalue_options () 
-
-lvalue_options
-  : ()
-  | DOT ID lvalue_options ()
-  | LBRACK exp RBRACK lvalue_options ()
-
-
+expseq: SEMICOLON exp expseq ()
+  | ()
 
