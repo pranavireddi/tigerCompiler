@@ -11,10 +11,12 @@
   | BREAK | NIL
   | FUNCTION | VAR | TYPE 
 
-%nonterm  exp | program | expseq | lvalue | function_call | arithmetic_exp 
-         | comparison_exp | boolean_exp | record_creation | array_creation | conditional_exp | while_exp 
+%nonterm  exp | program | expseq | arithmetic_exp 
+         | comparison_exp | boolean_exp | record_creation | conditional_exp | while_exp 
          | for_exp | let_exp | decs | exp_list | dec | function_dec | param_list | param | var_dec 
-         | type_dec | record_type | field_list | field | array_type
+         | type_dec | record_type | field_list | field | array_type | id_exp | id_options | lvalue_options
+         | or_exp | and_exp | rel_exp | add_exp | mul_exp | unary_exp | primary_exp | relop
+
 
 %pos int
 %verbose
@@ -44,64 +46,63 @@
 
 program	: exp				()
 
-exp: lvalue ()
-    | NIL        ()
-    | INT				()
-    | STRING			()
-    | LPAREN expseq RPAREN		()
-    | LPAREN RPAREN    ()
-    | MINUS exp %prec UNARYMINUS      ()
-    | function_call		()
-    | arithmetic_exp		()
-    | comparison_exp		() 
-    | boolean_exp		()
-    | record_creation		()
-    | array_creation		()
-    | conditional_exp		()
-    | while_exp			()
-    | for_exp			()
-    | let_exp			()
+exp : or_exp ()
+    | record_creation ()
+    | conditional_exp ()
+    | while_exp ()
+    | for_exp ()
+    | let_exp ()
+    | BREAK ()
 
-expseq : exp ()
-    | exp SEMICOLON expseq	()
-    | ()
+or_exp
+  : and_exp %prec OR ()
+  | or_exp OR and_exp ()
 
-function_call : ID LPAREN RPAREN		()
-    | ID LPAREN exp_list RPAREN		()
 
-exp_list : exp				()
-    | exp COMMA exp_list		()
-    | ()
+and_exp
+  : rel_exp %prec AND ()
+  | and_exp AND rel_exp ()
 
-arithmetic_exp : exp PLUS exp		()
-    | exp MINUS exp		()
-    | exp TIMES exp		()
-    | exp DIVIDE exp		()
 
-comparison_exp : exp EQ exp		()
-    | exp NEQ exp		()
-    | exp LT exp		()
-    | exp LE exp		()
-    | exp GT exp		()
-    | exp GE exp		()
+rel_exp
+  : add_exp %prec OR () 
+  | add_exp relop add_exp ()
 
-boolean_exp : exp AND exp ()
-    | exp OR exp		()
+
+relop
+  : EQ () | NEQ () | LT () | LE () | GT () | GE ()
+
+
+add_exp
+  : mul_exp %prec PLUS ()
+  | add_exp PLUS mul_exp ()
+  | add_exp MINUS mul_exp ()
+
+mul_exp
+  : unary_exp %prec TIMES ()
+  | mul_exp TIMES unary_exp ()
+  | mul_exp DIVIDE unary_exp ()
+
+
+unary_exp
+  : primary_exp ()
+  | MINUS unary_exp %prec UNARYMINUS ()
+
+primary_exp
+  : id_exp ()
+  | NIL () | INT () | STRING ()
+  | LPAREN expseq RPAREN ()
+  | LPAREN RPAREN ()
 
 (* NOTE: Need to fix record creation *)
 record_creation : LBRACE ID RBRACE	()
-
-
-array_creation : ID LBRACK exp RBRACK OF exp	()
 
 conditional_exp : IF exp THEN exp ELSE exp	()
     | IF exp THEN exp		()
 
 while_exp : WHILE exp DO exp		()
-    | WHILE exp DO exp BREAK	()
 
 for_exp : FOR ID ASSIGN exp TO exp DO exp	()
-    | FOR ID ASSIGN exp TO exp DO exp BREAK	()
 
 let_exp : LET decs IN expseq END	()
 
@@ -137,9 +138,19 @@ field : ID COLON ID			()
 
 array_type : ARRAY OF ID		()
 
-lvalue: ID ()
-    | lvalue DOT ID			()
-    | lvalue LBRACK exp RBRACK		()
+(* NOTE: need some way of grouping lvalues and id stuff to make sure we don't have shift reduce issues. *)
+
+id_exp : ID id_options ()
+
+id_options
+  : LPAREN exp_list RPAREN ()
+  | LBRACK exp RBRACK OF exp ()
+  | lvalue_options () 
+
+lvalue_options
+  : ()
+  | DOT ID lvalue_options ()
+  | LBRACK exp RBRACK lvalue_options ()
 
 
 
