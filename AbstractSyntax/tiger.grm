@@ -7,13 +7,44 @@ structure A = Absyn
   | INT of int | STRING of string 
   | COMMA | COLON | SEMICOLON | LPAREN | RPAREN | LBRACK | RBRACK 
   | LBRACE | RBRACE | DOT 
-  | PLUS | MINUS | TIMES | DIVIDE | EQ | NEQ | LT | LE | GT | GE
+  | PLUS | MINUS | UMINUS | TIMES | DIVIDE | EQ | NEQ | LT | LE | GT | GE
   | AND | OR | ASSIGN
   | ARRAY | IF | THEN | ELSE | WHILE | FOR | TO | DO | LET | IN | END | OF 
   | BREAK | NIL
   | FUNCTION | VAR | TYPE 
 
-%nonterm  exp | program of A.exp
+%nonterm
+    program
+  | exp
+  | lvalue
+  | decs 
+  | dec
+  | arithmetic_exp
+  | comparison_exp
+  | boolean_exp
+  | while_exp
+  | for_exp
+  | conditional_exp
+  | array_exp
+  | record_exp
+  | record_field_list
+  | record_field
+  | function_dec 
+  | param_list 
+  | param 
+  | var_dec 
+  | type_dec 
+  | record_type 
+  | field_list 
+  | field 
+  | array_type 
+  | expseq 
+  | let_exp 
+  | paren_exp 
+  | function_call_exp 
+  | let_inside 
+  | fun_inside 
+  | fun_options
 
 %pos int
 %verbose
@@ -23,8 +54,25 @@ structure A = Absyn
 
 %name Tiger
 
+%nonassoc ASSIGN
+%nonassoc ID
+%nonassoc WHILE DO
+
+(* #NOTE: we always wanna read more if doing then or else bc cannot make decision yet *)
+%right THEN
+%right ELSE
+%nonassoc LBRACK RBRACK OF
+
+(* #NOTE: need to have OR lower precedence than AND *)
+%left OR
+%left AND
+%nonassoc EQ NEQ LT LE GT GE
+%left PLUS MINUS
+%left TIMES DIVIDE
+%left UMINUS
+
 %keyword WHILE FOR TO BREAK LET IN END FUNCTION VAR TYPE ARRAY IF THEN ELSE 
-	DO OF NIL
+         DO OF NIL
 
 %prefer THEN ELSE LPAREN
 
@@ -34,7 +82,120 @@ structure A = Absyn
 
 %%
 
-program	: exp				(exp)
+program: exp ()
 
-	
-exp: NIL		(A.NilExp)
+exp: lvalue ()
+  | NIL ()
+  | INT ()
+  | STRING ()
+  | lvalue ASSIGN exp ()
+  | paren_exp ()
+  
+  | array_exp ()
+  | record_exp ()
+  | let_exp ()
+
+  | function_call_exp ()
+
+  | MINUS exp %prec UMINUS ()
+  | arithmetic_exp ()
+  | comparison_exp ()
+  | boolean_exp ()
+
+  | conditional_exp ()
+  | while_exp ()
+  | for_exp ()
+  | BREAK ()
+
+lvalue: ID ()
+  | lvalue DOT ID ()
+  | ID LBRACK exp RBRACK ()
+  | lvalue LBRACK exp RBRACK ()
+
+array_exp: ID LBRACK exp RBRACK OF exp ()
+
+record_exp: 
+    ID LBRACE record_field_list RBRACE ()
+  | ID LBRACE RBRACE ()
+
+record_field_list: 
+    record_field ()
+  | record_field COMMA record_field_list ()
+
+record_field: ID EQ exp ()
+
+paren_exp: LPAREN exp RPAREN ()
+  | LPAREN exp SEMICOLON exp expseq RPAREN ()
+  | LPAREN RPAREN ()
+
+arithmetic_exp: exp PLUS exp ()
+  | exp MINUS exp ()
+  | exp TIMES exp ()
+  | exp DIVIDE exp ()
+
+comparison_exp: exp EQ exp		()
+    | exp NEQ exp		()
+    | exp LT exp		()
+    | exp LE exp		()
+    | exp GT exp		()
+    | exp GE exp		()
+
+boolean_exp: exp AND exp ()
+    | exp OR exp		()
+
+while_exp: WHILE exp DO exp		()
+
+for_exp: FOR ID ASSIGN exp TO exp DO exp	()
+
+conditional_exp: IF exp THEN exp ELSE exp	()
+    | IF exp THEN exp		()
+
+function_call_exp: ID LPAREN fun_inside RPAREN		()
+
+(* #NOTE: need similar logic to expseq for parsing function call arguments, since we need to be able to parse more if we see a comma, but also need to be able to stop if we see a right paren *)
+fun_inside: exp fun_options ()
+  | ()
+
+fun_options: COMMA exp fun_options ()
+  | ()
+  
+let_exp: LET decs IN let_inside END () 
+
+(* #NOTE: weird issues with not parsing let correclty when just using expseq directly *)
+let_inside: exp expseq ()
+ | ()
+  
+decs: ()
+    | dec decs		()
+
+dec: function_dec			()
+    | var_dec			    ()
+    | type_dec			  ()
+
+function_dec: FUNCTION ID LPAREN RPAREN EQ exp                      (A.FunctionDec([{$2, [], }]))
+            | FUNCTION ID LPAREN param_list RPAREN EQ exp           ()
+            | FUNCTION ID LPAREN RPAREN COLON ID EQ exp             ()  
+            | FUNCTION ID LPAREN param_list RPAREN COLON ID EQ exp  ()
+
+param_list: param			()
+    | param COMMA param_list		()
+param: ID COLON ID			()
+
+var_dec: VAR ID ASSIGN exp		()
+    | VAR ID COLON ID ASSIGN exp	()  
+
+type_dec: TYPE ID EQ ID		()
+    | TYPE ID EQ record_type	()
+    | TYPE ID EQ array_type		()
+
+record_type: LBRACE field_list RBRACE	()
+    | LBRACE RBRACE ()
+field_list: field			()
+    | field COMMA field_list		()
+field: ID COLON ID			()  
+
+array_type: ARRAY OF ID		()
+
+expseq: SEMICOLON exp expseq ()
+  | ()
+
