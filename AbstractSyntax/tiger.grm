@@ -14,37 +14,37 @@ structure A = Absyn
   | FUNCTION | VAR | TYPE 
 
 %nonterm
-    program
-  | exp
-  | lvalue
-  | decs 
-  | dec
-  | arithmetic_exp
-  | comparison_exp
-  | boolean_exp
-  | while_exp
-  | for_exp
-  | conditional_exp
-  | array_exp
-  | record_exp
-  | record_field_list
-  | record_field
-  | function_dec 
-  | param_list 
-  | param 
-  | var_dec 
-  | type_dec 
-  | record_type 
-  | field_list 
-  | field 
-  | array_type 
-  | expseq 
-  | let_exp 
-  | paren_exp 
-  | function_call_exp 
-  | let_inside 
-  | fun_inside 
-  | fun_options
+    program     of A.exp
+  | exp         of A.exp
+  | lvalue      of A.var
+  | decs        of A.dec list
+  | dec         of A.dec
+  | arithmetic_exp of A.exp
+  | comparison_exp of A.exp
+  | boolean_exp of A.exp
+  | while_exp of A.exp
+  | for_exp of A.exp
+  | conditional_exp of A.exp
+  | array_exp of A.exp
+  | record_exp of A.exp
+  | record_field_list of (A.symbol * A.exp * A.pos) list
+  | record_field of A.symbol * A.exp * A.pos
+  | function_dec of A.fundec list
+  | param_list of A.field list
+  | param of A.field
+  | var_dec of A.dec
+  | type_dec of A.dec (* CHECK *)
+  | record_type of A.ty
+  | field_list of A.field list
+  | field of A.field
+  | array_type of A.ty
+  | expseq of (A.exp * A.pos) list
+  | let_exp of A.exp
+  | paren_exp of A.exp
+  | function_call_exp of A.exp
+  | let_inside of (A.exp * A.pos) list
+  | fun_inside of A.exp list
+  | fun_options of A.exp list
 
 %pos int
 %verbose
@@ -82,100 +82,100 @@ structure A = Absyn
 
 %%
 
-program: exp ()
+program: exp (exp)
 
-exp: lvalue ()
-  | NIL ()
-  | INT ()
-  | STRING ()
-  | lvalue ASSIGN exp ()
-  | paren_exp ()
+exp: lvalue (A.VarExp(lvalue))
+  | NIL (A.NilExp)
+  | INT (A.IntExp(INT))
+  | STRING (A.StringExp(STRING, STRINGleft))
+  | lvalue ASSIGN exp (A.AssignExp{var=lvalue, exp=exp, pos=lvalueleft})
+  | paren_exp (paren_exp)
   
-  | array_exp ()
-  | record_exp ()
-  | let_exp ()
+  | array_exp (array_exp)
+  | record_exp (record_exp)
+  | let_exp (let_exp)
 
-  | function_call_exp ()
+  | function_call_exp (function_call_exp)
 
-  | MINUS exp %prec UMINUS ()
-  | arithmetic_exp ()
-  | comparison_exp ()
-  | boolean_exp ()
+  | MINUS exp %prec UMINUS (A.OpExp{left=A.IntExp(0), oper=A.MinusOp, right=exp, pos=MINUSleft})
+  | arithmetic_exp (arithmetic_exp)
+  | comparison_exp (comparison_exp)
+  | boolean_exp (boolean_exp)
 
-  | conditional_exp ()
-  | while_exp ()
-  | for_exp ()
-  | BREAK ()
+  | conditional_exp (conditional_exp)
+  | while_exp (while_exp)
+  | for_exp (for_exp)
+  | BREAK (A.BreakExp(BREAKleft))
 
-lvalue: ID ()
-  | lvalue DOT ID ()
-  | ID LBRACK exp RBRACK ()
-  | lvalue LBRACK exp RBRACK ()
+lvalue: ID (A.SimpleVar(Symbol.symbol ID, IDleft))
+  | lvalue DOT ID (A.FieldVar(lvalue, Symbol.symbol ID, lvalueleft))
+  | ID LBRACK exp RBRACK (A.SubscriptVar(A.SimpleVar(Symbol.symbol ID, IDleft), exp, IDleft))
+  | lvalue LBRACK exp RBRACK (A.SubscriptVar(lvalue, exp, lvalueleft))
 
-array_exp: ID LBRACK exp RBRACK OF exp ()
+array_exp: ID LBRACK exp RBRACK OF exp (A.ArrayExp{typ=Symbol.symbol ID, size=exp1, init=exp2, pos=IDleft})
 
 record_exp: 
-    ID LBRACE record_field_list RBRACE ()
-  | ID LBRACE RBRACE ()
+    ID LBRACE record_field_list RBRACE (A.RecordExp{fields=record_field_list, typ=Symbol.symbol ID, pos=IDleft})
+  | ID LBRACE RBRACE (A.RecordExp{fields=[], typ=Symbol.symbol ID, pos=IDleft})
 
 record_field_list: 
-    record_field ()
-  | record_field COMMA record_field_list ()
+    record_field ([record_field])
+  | record_field COMMA record_field_list (record_field :: record_field_list)
 
-record_field: ID EQ exp ()
+record_field: ID EQ exp (Symbol.symbol ID, exp, IDleft)
 
-paren_exp: LPAREN exp RPAREN ()
-  | LPAREN exp SEMICOLON exp expseq RPAREN ()
-  | LPAREN RPAREN ()
+paren_exp: LPAREN exp RPAREN (exp)
+  | LPAREN exp SEMICOLON exp expseq RPAREN (A.SeqExp((exp1, exp1left) :: (exp2, exp2left) :: expseq))
+  | LPAREN RPAREN (A.SeqExp([]))
 
-arithmetic_exp: exp PLUS exp ()
-  | exp MINUS exp ()
-  | exp TIMES exp ()
-  | exp DIVIDE exp ()
+arithmetic_exp: exp PLUS exp (A.OpExp{left=exp1, oper=A.PlusOp, right=exp2, pos=exp1left})
+  | exp MINUS exp (A.OpExp{left=exp1, oper=A.MinusOp, right=exp2, pos=exp1left})
+  | exp TIMES exp (A.OpExp{left=exp1, oper=A.TimesOp, right=exp2, pos=exp1left})
+  | exp DIVIDE exp (A.OpExp{left=exp1, oper=A.DivideOp, right=exp2, pos=exp1left})
 
-comparison_exp: exp EQ exp		()
-    | exp NEQ exp		()
-    | exp LT exp		()
-    | exp LE exp		()
-    | exp GT exp		()
-    | exp GE exp		()
+comparison_exp: exp EQ exp		(A.OpExp{left=exp1, oper=A.EqOp, right=exp2, pos=exp1left})
+    | exp NEQ exp		(A.OpExp{left=exp1, oper=A.NeqOp, right=exp2, pos=exp1left})
+    | exp LT exp		(A.OpExp{left=exp1, oper=A.LtOp, right=exp2, pos=exp1left})
+    | exp LE exp		(A.OpExp{left=exp1, oper=A.LeOp, right=exp2, pos=exp1left})
+    | exp GT exp		(A.OpExp{left=exp1, oper=A.GtOp, right=exp2, pos=exp1left})
+    | exp GE exp		(A.OpExp{left=exp1, oper=A.GeOp, right=exp2, pos=exp1left})
 
-boolean_exp: exp AND exp ()
-    | exp OR exp		()
+boolean_exp: exp AND exp (A.IfExp{test=exp1, then'=exp2, else'=SOME(A.IntExp(0)), pos=exp1left})
+    | exp OR exp		(A.IfExp{test=exp1, then'=A.IntExp(1), else'=SOME(exp2), pos=exp1left})
 
-while_exp: WHILE exp DO exp		()
+while_exp: WHILE exp DO exp		(A.WhileExp{test=exp1, body=exp2, pos=WHILEleft})
 
-for_exp: FOR ID ASSIGN exp TO exp DO exp	()
+for_exp: FOR ID ASSIGN exp TO exp DO exp	(A.ForExp{var=Symbol.symbol ID, escape=ref true, lo=exp1, hi=exp2, body=exp3, pos=FORleft})
 
-conditional_exp: IF exp THEN exp ELSE exp	()
-    | IF exp THEN exp		()
+conditional_exp: IF exp THEN exp ELSE exp	(A.IfExp{test=exp1, then'=exp2, else'=SOME(exp3), pos=IFleft})
+    | IF exp THEN exp		(A.IfExp{test=exp1, then'=exp2, else'=NONE, pos=IFleft})
 
-function_call_exp: ID LPAREN fun_inside RPAREN		()
+function_call_exp: ID LPAREN fun_inside RPAREN		(A.CallExp{func=Symbol.symbol ID, args=fun_inside, pos=IDleft})
 
 (* #NOTE: need similar logic to expseq for parsing function call arguments, since we need to be able to parse more if we see a comma, but also need to be able to stop if we see a right paren *)
-fun_inside: exp fun_options ()
-  | ()
+fun_inside: exp fun_options (exp :: fun_options)
+  | ([])
 
-fun_options: COMMA exp fun_options ()
-  | ()
+fun_options: COMMA exp fun_options (exp :: fun_options)
+  | ([])
   
-let_exp: LET decs IN let_inside END () 
+let_exp: LET decs IN let_inside END (A.LetExp{decs=decs, body=A.SeqExp(let_inside), pos=LETleft}) 
 
 (* #NOTE: weird issues with not parsing let correclty when just using expseq directly *)
-let_inside: exp expseq ()
- | ()
+let_inside: exp expseq ((exp,expleft) :: expseq)
+ | ([])
   
-decs: ()
-    | dec decs		()
+decs: ([])
+    | dec decs		(dec :: decs)
 
-dec: function_dec			()
-    | var_dec			    ()
-    | type_dec			  ()
+dec: function_dec			(A.FunctionDec(function_dec))
+    | var_dec			(var_dec)
+    | type_dec			(A.TypeDec(type_dec))
 
-function_dec: FUNCTION ID LPAREN RPAREN EQ exp                      (A.FunctionDec([{$2, [], }]))
-            | FUNCTION ID LPAREN param_list RPAREN EQ exp           ()
-            | FUNCTION ID LPAREN RPAREN COLON ID EQ exp             ()  
-            | FUNCTION ID LPAREN param_list RPAREN COLON ID EQ exp  ()
+function_dec: FUNCTION ID LPAREN RPAREN EQ exp ()
+            | FUNCTION ID LPAREN param_list RPAREN EQ exp ()
+            | FUNCTION ID LPAREN RPAREN COLON ID EQ exp ()
+            | FUNCTION ID LPAREN param_list RPAREN COLON ID EQ exp ()
 
 param_list: param			()
     | param COMMA param_list		()
