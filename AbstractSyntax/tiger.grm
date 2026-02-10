@@ -33,7 +33,7 @@ structure A = Absyn
   | param_list of A.field list
   | param of A.field
   | var_dec of A.dec
-  | type_dec of A.dec (* CHECK *)
+  | type_dec of {name: A.symbol, ty: A.ty, pos: A.pos} list
   | record_type of A.ty
   | field_list of A.field list
   | field of A.field
@@ -162,7 +162,7 @@ fun_options: COMMA exp fun_options (exp :: fun_options)
 let_exp: LET decs IN let_inside END (A.LetExp{decs=decs, body=A.SeqExp(let_inside), pos=LETleft}) 
 
 (* #NOTE: weird issues with not parsing let correclty when just using expseq directly *)
-let_inside: exp expseq ((exp,expleft) :: expseq)
+let_inside: exp expseq ((exp, expleft) :: expseq)
  | ([])
   
 decs: ([])
@@ -172,30 +172,30 @@ dec: function_dec			(A.FunctionDec(function_dec))
     | var_dec			(var_dec)
     | type_dec			(A.TypeDec(type_dec))
 
-function_dec: FUNCTION ID LPAREN RPAREN EQ exp ()
-            | FUNCTION ID LPAREN param_list RPAREN EQ exp ()
-            | FUNCTION ID LPAREN RPAREN COLON ID EQ exp ()
-            | FUNCTION ID LPAREN param_list RPAREN COLON ID EQ exp ()
+function_dec: FUNCTION ID LPAREN RPAREN EQ exp ([{name=Symbol.symbol ID, params=[], result=NONE, body=exp, pos=FUNCTIONleft}])
+            | FUNCTION ID LPAREN param_list RPAREN EQ exp ([{name=Symbol.symbol ID, params=param_list, result=NONE, body=exp, pos=FUNCTIONleft}])
+            | FUNCTION ID LPAREN RPAREN COLON ID EQ exp ([{name=Symbol.symbol ID1, params=[], result=SOME(Symbol.symbol ID2, ID2left), body=exp, pos=FUNCTIONleft}])
+            | FUNCTION ID LPAREN param_list RPAREN COLON ID EQ exp ([{name=Symbol.symbol ID1, params=param_list, result=SOME(Symbol.symbol ID2, ID2left), body=exp, pos=FUNCTIONleft}])
 
-param_list: param			()
-    | param COMMA param_list		()
-param: ID COLON ID			()
+param_list: param			([param])
+    | param COMMA param_list		(param :: param_list)
+param: ID COLON ID			({name=Symbol.symbol ID1, escape=ref true, typ=Symbol.symbol ID2, pos=ID1left})
 
-var_dec: VAR ID ASSIGN exp		()
-    | VAR ID COLON ID ASSIGN exp	()  
+var_dec: VAR ID ASSIGN exp		(A.VarDec{name=Symbol.symbol ID, escape=ref true, typ=NONE, init=exp, pos=VARleft})
+    | VAR ID COLON ID ASSIGN exp	(A.VarDec{name=Symbol.symbol ID1, escape=ref true, typ=SOME(Symbol.symbol ID2, ID2left), init=exp, pos=VARleft})  
 
-type_dec: TYPE ID EQ ID		()
-    | TYPE ID EQ record_type	()
-    | TYPE ID EQ array_type		()
+type_dec: TYPE ID EQ ID		([{name=Symbol.symbol ID1, ty=A.NameTy(Symbol.symbol ID2, ID2left), pos=TYPEleft}])
+    | TYPE ID EQ record_type	([{name=Symbol.symbol ID, ty=record_type, pos=TYPEleft}])
+    | TYPE ID EQ array_type		([{name=Symbol.symbol ID, ty=array_type, pos=TYPEleft}])
 
-record_type: LBRACE field_list RBRACE	()
-    | LBRACE RBRACE ()
-field_list: field			()
-    | field COMMA field_list		()
-field: ID COLON ID			()  
+record_type: LBRACE field_list RBRACE	(A.RecordTy(field_list))
+    | LBRACE RBRACE (A.RecordTy([]))
+field_list: field			([field])
+    | field COMMA field_list		(field :: field_list)
+field: ID COLON ID			({name=Symbol.symbol ID1, escape=ref true, typ=Symbol.symbol ID2, pos=ID1left})  
 
-array_type: ARRAY OF ID		()
+array_type: ARRAY OF ID		(A.ArrayTy(Symbol.symbol ID, IDleft))
 
-expseq: SEMICOLON exp expseq ()
-  | ()
+expseq: SEMICOLON exp expseq ((exp, expleft) :: expseq)
+  | ([])
 

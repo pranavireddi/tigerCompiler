@@ -1,0 +1,45 @@
+
+(
+  /* basic arithmetic */
+  let var x := 5 in x + 2 end;
+
+  /* Record type, constructor, field access */
+  let
+    type point = { x:int, y:int }
+    var p := point { x = 3, y = 4 }
+  in
+    p.x + p.y
+  end;
+
+  /* Empty record type + constructor */
+  let
+    type empty = { }
+    var e := empty { }
+  in
+    0
+  end;
+
+  /* Array creation + indexing */
+  let
+    type intArray = array of int
+    var a := intArray [3] of 7
+  in
+    a[0] + a[1] + a[2]
+  end;
+
+  /* Function dec and call */
+  let
+    function id(x:int) : int = x
+  in
+    id(10)
+  end;
+
+  /* For loop */
+  let
+    var sum := 0
+  in
+    (for i := 0 to 2 do
+      (sum := sum + i; ());
+    sum)
+  end
+)

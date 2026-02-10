@@ -1,0 +1,37 @@
+(
+/* using nil without type annotation in var dec */
+  let var a := nil in 0 end;
+
+/* mutually recursive type */
+  let
+    type b = c
+    type c = b
+  in
+    0
+  end;
+
+/* wrong order in constructor */
+  let
+    type p = { x:int, y:int }
+    var r := p { y = 2, x = 1 }
+  in
+    r.x + r.y
+  end;
+
+/* assigning to loop index */
+  let
+  var s := 0
+  in
+    (for i := 0 to 2 do
+        (i := i + 1; s := s + i);
+    s)
+  end;
+
+/* break outside loop */
+  let
+    var x := 1
+  in
+    break; 
+    x
+  end
+)

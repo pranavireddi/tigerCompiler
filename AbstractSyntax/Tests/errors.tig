@@ -1,0 +1,23 @@
+(
+    /* record constructor using ASSIGN */
+  let
+    type p = { x:int }
+    var r := p { x := 1 }
+  in
+    r.x
+  end;
+
+/* trailing comma in record constructor */
+  let
+    type t = { a:int, b:int }
+    var z := t { a = 1, b = 2, }
+  in
+    z.a
+  end;
+
+/* missing RPAREN */
+  let var a := 1 in (a + 2 end  ;
+
+/* missing RBRACK */
+  let type arr = array of int var a := arr [3 of 0 in a end 
+)
