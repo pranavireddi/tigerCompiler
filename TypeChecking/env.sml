@@ -46,7 +46,7 @@ struct
 
     fun addVarVal(table, name, type) = S.enter(table, name, VarEntry ty)
 
-    fun addTypeVal (table, name, type) = S.enter(table, name, type)
+    fun addTypeVal (table, name, type) = S.enter(table, name, ty)
 end
 
 

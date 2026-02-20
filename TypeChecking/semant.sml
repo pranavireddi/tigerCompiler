@@ -1,4 +1,4 @@
-Structure Semant =
+structure Semant =
 
 struct
     structure A = Absyn
@@ -19,14 +19,12 @@ struct
     fun checkInt(T.INT, pos) = ()
     | checkInt (_, pos) = Err.error pos "error: integer required"
 
-    fun checkEqual (t1, t2, pos) = ()
+    fun checkEqual (t1, t2, pos) = 
     (case (t1, t2) of
         (T.INT, T.INT) => ()
         | (T.STRING, T.STRING) => ()
         | (T.NIL, T.RECORD _) => ()
         | (T.RECORD _, T.NIL) => ()
-        | (T.NIL, T.ARRAY _) => ()
-        | (T.ARRAY _, T.NIL) => ()
         | (T.UNIT, T.UNIT) => ()
         | _ => Err.error pos "error: mismatched types")
 
@@ -39,6 +37,54 @@ struct
         (T.INT, T.INT) => ()
         | (T.STRING, T.STRING) => ()
         | _ => Err.error pos "error: types not comparable")
+
+    fun reduceToActualType (tenv, ty) : T.ty =
+    let
+        fun alrSeenBefore (sym, seen) =
+        List.exists (fn s => S.name s = S.name sym) seen
+
+        fun reduce(t : T.ty, seen : S.symbol list) : T.ty =
+        case t of
+            T.NAME (sym, tyRef) =>
+                if alrSeenBefore (sym, seen) then
+                    T.BOTTOM
+                else
+                    (case !tyRef of
+                        SOME t' => reduce(t', sym :: seen)
+                        | NONE =>
+                            (case Env.findMatchType (tenv, sym) of
+                                SOME t'' => reduce(t'', sym :: seen)
+                                | NONE => T.BOTTOM))
+            | _ => t
+    in
+        reduce(ty, [])
+    end
+
+
+    fun checkAssignable (lhsTy, rhsTy, pos, tenv) =
+    let
+        val lhs = reduceToActualType(tenv, lhsTy)
+        val rhs = reduceToActualType(tenv, rhsTy)
+    in
+        case (lhs, rhs) of
+        (T.INT,    T.INT)    => ()
+        | (T.STRING, T.STRING) => ()
+        | (T.UNIT,   T.UNIT)   => ()
+
+        (* #NOTE: this rule is specified in chapter!  *)
+        | (T.RECORD _, T.NIL)  => ()
+
+        | (T.RECORD(_, u1), T.RECORD(_, u2)) =>
+            if u1 = u2 then () else Err.error pos "error: record types do not match"
+        | (T.ARRAY(_, u1), T.ARRAY(_, u2)) =>
+            if u1 = u2 then () else Err.error pos "error: array types do not match"
+
+        | (T.BOTTOM, _) => ()
+        | (_, T.BOTTOM) => ()
+
+        | _ => Err.error pos "error: cannot assign expression to variable of this type"
+    end
+
 
     fun checkIfBranches (t1, t2, pos) =
         (case (t1, t2) of
@@ -69,7 +115,7 @@ struct
         fun trexp (e : A.exp) : expty =    
             case e of 
                 (* NOTE: base cases for literals and variables which sholud like always have these types *)
-                A.VarExp v => trvar v
+                A.VarExp v => transVar(venv, tenv, v)
                 | A.IntExp(intVal) => ({exp=(), ty=T.INT})
                 | A.StringExp(stringVal, pos) => {exp=(), ty=T.STRING}
                 | A.NilExp => {exp=(), ty=T.NIL}
@@ -153,19 +199,18 @@ struct
                         val {ty=expTy, ...} = trexp exp
                     in
                         (* #NOTE: think j need to make sure that type of val matches intended type *)
-                        checkEqual(varTy, expTy, pos);
+                        checkAssignable(varTy, expTy, pos, tenv);
                         {exp=(), ty=T.UNIT}
                     end
 
                 | A.SeqExp(exps) =>
-                    (* #NOTE: think general idea is to make sure type works for every exp in exps. TODO: do we return last exp type idk ? 
+                    (* #NOTE: think general idea is to make sure type works for every exp in exps. we return last exp type idk ? 
                     also, for ref (exp, pos) *)
                     let
                     fun checkExps [] = T.UNIT
                         (* #NOTE: base case w last exp in exps, wanna return type of it, assuming no other type errors. *)
                         | checkExps [(exp, pos)] = #ty (trexp exp)
-                        | checkExps ((exp, pos)::otherEx
-                        0ps) = (trexp exp; checkExps otherExps)
+                        | checkExps ((exp, pos)::otherExps) = (trexp exp; checkExps otherExps)
                     in
                     {exp=(), ty=checkExps exps}
                     end
@@ -182,14 +227,63 @@ struct
             in
             trexp exp
             end
-
-    (* #TODO: actually might need to happen after decs and type stuff bc we need env info for this !! *)
+            
     and transVar(venv, tenv, var) : expty =
         let fun trvar(var: A.var) : expty =
+
             case var of
-                A.SimpleVar (sym, pos) => ()
-                | A.FieldVar (var, sym, pos) => ()
-                | A.SubscriptVar (var, exp, pos) => ()
+
+                A.SimpleVar(sym, pos) =>
+                    (case Env.findMatchType(venv, sym) of
+
+                        SOME (Env.VarEntry ty) =>
+                            {exp = (), ty = ty}
+
+                        (* #NOTE: enventry can also have function stuff and we don't rlly want that *)
+                        | SOME (Env.FunEntry fun) =>
+                            (Err.error pos "error: found a function ?!"; {exp = (), ty = T.BOTTOM})
+                        | NONE =>
+                            (Err.error pos "error: undefined variable"; {exp = (), ty = T.BOTTOM}))
+
+                (* #NOTE: need to check main variable type, go thru fields and check types?  *)
+                | A.FieldVar (var, sym, pos) => 
+                    let
+                        val {ty=baseType, ... } = trvar var
+                        val reducedBaseType = reduceToActualType(tenv, baseType)
+                        
+                        fun checkMatchField [] = NONE
+                            | checkMatchField ((fieldName, fieldType)::rest) =
+                                if fieldName = sym 
+                                    then SOME fieldType 
+                                else checkMatchField rest
+                    in
+                        case reducedBaseType of
+                            T.RECORD(fieldList, _) =>
+                                    (case (checkMatchField(fieldList)) of 
+                                    SOME fieldType => {exp = (), ty=fieldType}
+                                    | NONE => (Err.error pos "error: field not found !"; {exp = (), ty = T.BOTTOM}))
+                            | _ => (Err.error pos "error: not a record !"; {exp = (), ty = T.BOTTOM})
+                    end
+
+                | A.SubscriptVar (var, exp, pos) => 
+                    let 
+                        val {ty=indexType, ...} = transExp (venv, tenv, exp)
+                        val actualIndexType = reduceToActualType(tenv, indexType)
+
+                        val _ = (case actualIndexType of 
+                            T.INT => T.INT
+                            | _ => (Err.error pos "error: index it not an int !!";T.BOTTOM))
+
+                        val {ty=arrType, ...} = trvar var
+                        val actualArrayType = reduceToActualType(tenv, arrType)
+
+                        val elementsType = 
+                            (case actualArrayType of 
+                                T.ARRAY (elTy, _) => elTy
+                                | _ => (Err.error pos "error: not an array"; T.BOTTOM))
+                    in
+                        {exp=(), ty=elementsType}
+                    end
             in
             trvar var
             end
@@ -221,9 +315,9 @@ struct
 
                         fun checkDuplicateVals({name, ty, pos}, seen) = 
                             if List.exists (fn s => S.name s = S.name name) seen then
-                                Err.error pos "duplicate value found!"
+                                (Err.error pos "duplicate value found!"; seen)
                             else
-                                (sym::seen)
+                                (name::seen)
                         val _ = foldl checkDuplicateVals [] tydecs;
 
                         (* #NOTE: j wanna make sure that we don't have like loops w types, only allowed in arrays and records *)
@@ -255,12 +349,27 @@ struct
                 2) there is not an explicit type annotation. Also, no issue w mutual recursion here *)
                 | A.VarDec {name, escape, typ, init, pos} =>
                     let
-                    
-                    in
-                        { venv = newVenv, tenv = tenv }
-                    end
+                        val {ty=initTy, ...} = transExp(venv, tenv, init)
 
-                    
+                        val newVenv =
+                            case typ of
+
+                            (* #NOTE: case where there's no like initial specified type *)
+                            NONE =>
+                                (case initTy of
+                                    T.NIL => (Err.error pos "error: cannot infer type from nil"; venv)
+                                | _     => Env.addVarVal(venv, name, initTy))
+
+                            (* #NOTE: when we have an initial type given in the var dec *)
+                            | SOME (typeSym, typePos) =>
+                                (case Env.findMatchType(tenv, typeSym) of
+                                    NONE => (Err.error typePos "error: undefined type in var declaration"; venv)
+                                | SOME annTy =>
+                                    (checkAssignable(annTy, initTy, pos, tenv);
+                                    Env.addVarVal(venv, name, annTy)))
+                    in
+                        {venv = newVenv, tenv = tenv }
+                    end      
 
             in
             trdec dec
@@ -272,9 +381,9 @@ struct
             case astType of
                 A.NameTy (sym, pos) =>
                     (case Env.findMatchType (tenv, sym) of
-                        SOME ty => ty
-                    | NONE =>
-                        (Err.error pos "error cannot find matching type in symbol table, undefined maybe ?"; T.INT))
+                        SOME ty => T.NAME(sym, ref NONE)
+                        | NONE =>
+                            (Err.error pos "error cannot find matching type in symbol table, undefined maybe ?"; T.BOTTOM))
 
                 | A.RecordTy fields =>
                     let
@@ -284,7 +393,7 @@ struct
                             val fieldTy =
                                     case Env.findMatchType (tenv, typ) of
                                         SOME t => t
-                                    | NONE => (Err.error pos "error cannot find matching type in symbol table, undefined maybe ?"; T.INT)
+                                    | NONE => (Err.error pos "error cannot find matching type in symbol table, undefined maybe ?"; T.BOTTOM)
                             in
                             ((name, fieldTy) :: trFieldList rest)
                             end
@@ -296,7 +405,7 @@ struct
                     let
                         val arrayEltTy =  case Env.findMatchType (tenv, sym) of
                                         SOME t => t
-                                    | NONE => (Err.error pos "error cannot find matching type in symbol table, undefined maybe ?"; T.INT)
+                                    | NONE => (Err.error pos "error cannot find matching type in symbol table, undefined maybe ?"; T.BOTTOM)
                     in
                     T.ARRAY (arrayEltTy, ref ())
                     end
