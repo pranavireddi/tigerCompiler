@@ -32,7 +32,7 @@ struct
               | trexp (A.RecordExp{}) = T.UNIT
               | trexp (A.LetExp{decs, body, pos}) = (
                             let 
-                                val {venv=venv1, tenv=tenv1} = transDec{venv, tenv, decs}
+                                val {venv=venv1, tenv=tenv1} = transDec(venv, tenv, decs)
                             in
                                 transExp(venv1, tenv1) body
                             end
