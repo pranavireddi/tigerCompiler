@@ -112,6 +112,15 @@ struct
     - transDec: this is where we update like the value env lol (idk why this was not obvious to me before), 
     - transTy: where we wanna update type env lmao *)
 
+    (* 
+    transVar: venv * tenv * A.var -> expty
+    transExp: venv * tenv * A.exp -> expty
+    transDec: venv * tenv * A.dec -> {venv: venv, tenv: tenv}
+    transTy: tenv * A.ty -> T.ty 
+
+    type expty = {exp: Translate.exp, ty: Types.ty}
+    *)
+
     fun transExp (venv, tenv, exp) : expty =
     let
         fun trexp (e : A.exp) : expty =    
@@ -271,10 +280,15 @@ struct
                     end
 
                 (* #TODO: let exp needs to go here, prob after decs i think ? *)
-                
+                | A.LetExp{decs, body, pos} => 
+                    let 
+                        val {venv=venv_new, tenv=tenv_new} = transDec(venv, tenv, decs)
+                    in 
+                        transExp(venv_new, tenv_new, body)
+                    end
                 
                 (* #TODO: break exp also needs to happen *)
-                |A.BreakExp(pos) =>
+                | A.BreakExp(pos) =>
                     (* #NOTE: need to check if in loop first. then return type bottom or unit, not sure ? *)
                     {exp = (), ty=T.BOTTOM}
 
