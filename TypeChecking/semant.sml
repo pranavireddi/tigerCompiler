@@ -4,7 +4,9 @@ struct
     structure A = Absyn
     structure T = Types
     structure S = Symbol
-    structure Translate = struct type exp = unit end
+    (* structure Translate = struct type exp = unit end *)
+    (* ↑ NOTE: I moved Translate to a separate module/file. 
+                I believe when we get to the IR phase Translate will become a full individual module so i think it's best that we define it separately *)
 
     (* #NOTE: can find in env.sml *)
     type venv = Env.enventry S.table
@@ -191,7 +193,60 @@ struct
                         {exp=(), ty=T.UNIT}
                     end
 
-                (* #TODO: gonna do record exp and array exp here, should have similar logic. need to make sure contents are hte type of they type defined w the structure ?*)
+                (* #TODO: gonna do record exp and array exp here, should have similar logic. need to make sure contents are the type of they type defined w the structure ?*)
+                | A.RecordExp {fields, typ, pos} =>
+                    let 
+                        val declared_fields = Symbol.look(tenv, typ) (*look up the record ID to get declared field types*)
+                        
+                        (*convert the ast exp for each field to a Type*)
+                        fun checkSuppliedField ({name, exp, pos=fpos}) =
+                            let 
+                                val {ty = fty, ...} = trexp exp 
+                            in 
+                                (name, fty, fpos)
+                            end
+                        val supplied = List.map checkSuppliedField fields 
+
+                        (*look up declared record type in tenv*)
+                        val recordTy = 
+                            case typ of 
+                                NONE            => (Err.error pos "Error: record creation requires a record type name"; T.BOTTOM)
+                              | SOME typename   => (
+                                    case Env.findMatchType(tenv, typename) of 
+                                        NONE    => (Err.error pos "Error: undefind record type"; T.BOTTOM)
+                                      | SOME t  => (reduceToActualType (tenv, t))
+                              )
+                        
+                        (* verify each field matches declaration *)
+                        val _ = 
+                            case recordTy of 
+                                T.RECORD (declfields, unique) => 
+                                    let 
+                                        val decl_length = List.length declfields
+                                        val supp_length = List.length supplied
+                                        val length_diff = if decl_length <> supp_length then Err.error pos "Error: record field length doesn't match declared fields" else ()
+
+                                        val _ = 
+                                            if length_diff then () else 
+                                            let     
+                                                fun checkPair ((decl_sym, decl_ty), (supp_sym, supp_ty, supp_pos)) =
+                                                    if (S.name decl_sym <> S.name supp_sym) then 
+                                                        Err.error supp_pos "Error: record field name doesn't match declared field name"
+                                                    else
+                                                        checkAssignable(decl_ty, supp_ty, supp_pos, tenv)
+                                        
+                                                val field_pairs = ListPair.zip(declfields, supplied) 
+                                            in 
+                                                List.app checkPair field_pairs
+                                            end
+                                    in () end
+                              | T.BOTTOM    => ()  (*should have already reported error earlier*)
+                              | _           => (Err.error pos "Error: type name for record does not refer to a record type")
+                    in 
+                        {exp = (), ty = recordTy}
+                    end
+                
+                | A.ArrayExp {typ, size, init, pos} =>
 
                 | A.AssignExp {var, exp, pos} =>
                     let
@@ -216,6 +271,7 @@ struct
                     end
 
                 (* #TODO: let exp needs to go here, prob after decs i think ? *)
+                
                 
                 (* #TODO: break exp also needs to happen *)
                 |A.BreakExp(pos) =>
