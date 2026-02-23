@@ -3,6 +3,8 @@ structure A = Absyn
 structure S = Symbol
 
 
+(*  textbook guide: 
+
 signature ENV =  
 sig
     type access 
@@ -11,11 +13,10 @@ sig
                     | FunEntry of {formals: ty list, result: ty}
     val base_tenv : ty S.table
     val base_venv : enventry S.table
-end
+end 
 
-(*NOTE: ENV signature is from the book, i think we should add it here (?), 
-HOWEVER, the structure below has 3 more functions than the sig definition, is that allowed? or do we need to do something to make that legal? 
-although im not sure what the impact of having/not having the signature is on the code's behavior *)
+*)
+
 
 (* #NOTE: tryna make this functional, easy to fold w tuples of symbols and correct mappings? *)
 fun addToSymbolTable ((sym, value), table) = 
@@ -24,9 +25,6 @@ fun addToSymbolTable ((sym, value), table) =
 
 structure Env = 
 struct
-    type access = unit  (* TODO: what is access supposed to be ?? *)
-    type ty = T.ty
-
     (* #NOTE: j need to differentiate value and function types i think  *)
     datatype enventry = VarEntry of T.ty
                 | FunEntry of {formals: T.ty list, result: T.ty}
@@ -38,7 +36,7 @@ struct
         let 
             val baseSymbols = [("int", T.INT), ("string", T.STRING)]
         in
-            foldr addToSymbolTable S.empty baseSymbols
+            foldl addToSymbolTable S.empty baseSymbols
         end
 
     (* ALTERNATIVE IMPL
@@ -73,7 +71,7 @@ struct
                            ("not", FunEntry {formals=[T.INT], result=T.INT}),   (*TODO:  function not(i : integer) : integer -- is INTEGER the same as INT ???*)
                             ("exit", FunEntry {formals=[T.INT], result=T.UNIT})]
         in
-            foldr addToSymbolTable S.empty baseFunctions
+            foldl addToSymbolTable S.empty baseFunctions
         end
 
     fun findMatchType (table, sym) = S.look(table, sym)
