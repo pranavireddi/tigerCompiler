@@ -208,13 +208,9 @@ struct
                         {exp=(), ty=T.UNIT}
                     end
 
-                (* #TODO: gonna do record exp and array exp here, should have similar logic. need to make sure contents are the type of they type defined w the structure ?*)
                 | A.RecordExp {fields, typ, pos} =>
-                    let 
-                        val declared_fields = Symbol.look(tenv, typ) (*look up the record ID to get declared field types*)
-                        
-                        (*convert the ast exp for each field to a Type*)
-                        fun checkSuppliedField ({name, exp, pos=fpos}) =
+                    let                         
+                        fun checkSuppliedField ({name, exp, pos=fpos}) =         (*convert the ast exp for each field to a Type*)
                             let 
                                 val {ty = fty, ...} = trexp exp 
                             in 
@@ -261,7 +257,30 @@ struct
                         {exp = (), ty = recordTy}
                     end
                 
-                | A.ArrayExp {typ, size, init, pos} =>
+                | A.ArrayExp {typ, size, init, pos} => 
+                    let
+                        val {ty = initTy, ...} = trexp init
+
+                        val {ty = sizeTy, ...} = trexp size
+                        val _ = checkInt(sizeTy, pos)
+
+                        val arrayTy =  (*get TYPE of the arrayexp*)
+                            case typ of 
+                                NONE            => (Err.error pos "Error: array creation requires an array type name"; T.BOTTOM) 
+                              | SOME typename   =>  (*array name symbol exists*)
+                                    case Env.findMatchType(tenv, typename) of 
+                                        NONE    => (Err.error pos "Error: undefined array type"; T.BOTTOM)
+                                      | SOME t  => (reduceToActualType(tenv, t)) (*array type matched with previously declared type in tenv*)
+                        
+                        (* verify if arrayTy - the TYPE that the symbol matched with in tenv - is indeed an array *)
+                        val _ = 
+                            case arrayTy of 
+                                T.ARRAY (ty, unique) => checkAssignable(ty, initTy, pos, tenv)
+                              | T.BOTTOM    => () (*should've already indicated error above*)
+                              | _           => Err.error pos "Error: type name for array does not refer to an array type"
+                    in
+                        {exp = (), ty = arrayTy}
+                    end
 
                 | A.AssignExp {var, exp, pos} =>
                     let
@@ -285,7 +304,6 @@ struct
                     {exp=(), ty=checkExps exps}
                     end
 
-                (* #TODO: let exp needs to go here, prob after decs i think ? *)
                 | A.LetExp{decs, body, pos} => 
                     let 
                         val {venv=venv_new, tenv=tenv_new} = transDec(venv, tenv, decs)
