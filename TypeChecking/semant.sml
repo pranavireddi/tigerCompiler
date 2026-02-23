@@ -314,7 +314,7 @@ struct
                                 checkArgs(formals, args);
                                 {exp = (), ty = result}
                             end
-                        | NONE => (Err.error pos "error: not a function"; {exp = (), ty = T.UNIT})
+                        | NONE => (Err.error pos "error: not a function"; {exp = (), ty = T.BOTTOM})
             in
             trexp exp
             end
