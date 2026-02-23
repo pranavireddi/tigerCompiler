@@ -4,9 +4,6 @@ struct
     structure A = Absyn
     structure T = Types
     structure S = Symbol
-    (* structure Translate = struct type exp = unit end *)
-    (* ↑ NOTE: I moved Translate to a separate module/file. 
-                I believe when we get to the IR phase Translate will become a full individual module so i think it's best that we define it separately *)
 
     (* #NOTE: can find in env.sml *)
     type venv = Env.enventry S.table
@@ -204,11 +201,8 @@ struct
 
                 (* #TODO: gonna do record exp and array exp here, should have similar logic. need to make sure contents are the type of they type defined w the structure ?*)
                 | A.RecordExp {fields, typ, pos} =>
-                    let 
-                        val declared_fields = Symbol.look(tenv, typ) (*look up the record ID to get declared field types*)
-                        
-                        (*convert the ast exp for each field to a Type*)
-                        fun checkSuppliedField ({name, exp, pos=fpos}) =
+                    let                         
+                        fun checkSuppliedField ({name, exp, pos=fpos}) =         (*convert the ast exp for each field to a Type*)
                             let 
                                 val {ty = fty, ...} = trexp exp 
                             in 
@@ -255,7 +249,31 @@ struct
                         {exp = (), ty = recordTy}
                     end
                 
-                | A.ArrayExp {typ, size, init, pos} =>
+                
+                | A.ArrayExp {typ, size, init, pos} => 
+                    let
+                        val {ty = initTy, ...} = trexp init
+
+                        val {ty = sizeTy, ...} = trexp size
+                        val _ = checkInt(sizeTy, pos)
+
+                        val arrayTy =  (*get TYPE of the arrayexp*)
+                            case typ of 
+                                NONE            => (Err.error pos "Error: array creation requires an array type name"; T.BOTTOM) 
+                              | SOME typename   =>  (*array name symbol exists*)
+                                    case Env.findMatchType(tenv, typename) of 
+                                        NONE    => (Err.error pos "Error: undefined array type"; T.BOTTOM)
+                                      | SOME t  => (reduceToActualType(tenv, t)) (*array type matched with previously declared type in tenv*)
+                        
+                        (* verify if arrayTy - the TYPE that the symbol matched with in tenv - is indeed an array *)
+                        val _ = 
+                            case arrayTy of 
+                                T.ARRAY (ty, unique) => checkAssignable(ty, initTy, pos, tenv)
+                              | T.BOTTOM    => () (*should've already indicated error above*)
+                              | _           => Err.error pos "Error: type name for array does not refer to an array type"
+                    in
+                        {exp = (), ty = arrayTy}
+                    end
 
                 | A.AssignExp {var, exp, pos} =>
                     let
