@@ -29,11 +29,13 @@ structure A = Absyn
   | record_exp of A.exp
   | record_field_list of (A.symbol * A.exp * A.pos) list
   | record_field of A.symbol * A.exp * A.pos
-  | function_dec of A.fundec list
+  | function_dec_group of A.fundec list
+  | function_dec of A.fundec
   | param_list of A.field list
   | param of A.field
   | var_dec of A.dec
-  | type_dec of {name: A.symbol, ty: A.ty, pos: A.pos} list
+  | type_dec_group of {name: A.symbol, ty: A.ty, pos: A.pos} list
+  | type_dec of {name: A.symbol, ty: A.ty, pos: A.pos}
   | record_type of A.ty
   | field_list of A.field list
   | field of A.field
@@ -165,17 +167,22 @@ let_exp: LET decs IN let_inside END (A.LetExp{decs=decs, body=A.SeqExp(let_insid
 let_inside: exp expseq ((exp, expleft) :: expseq)
  | ([])
   
+(* allows for 0 or more declarations in a sequence. *)
 decs: ([])
     | dec decs		(dec :: decs)
 
-dec: function_dec			(A.FunctionDec(function_dec))
-    | var_dec			(var_dec)
-    | type_dec			(A.TypeDec(type_dec))
+(* for consecutive decs of the same type, we need to group them to enable mutual recursion *)
+dec: function_dec_group		(A.FunctionDec(function_dec_group))
+    | var_dec			        (var_dec)
+    | type_dec_group			(A.TypeDec(type_dec_group))
 
-function_dec: FUNCTION ID LPAREN RPAREN EQ exp ([{name=Symbol.symbol ID, params=[], result=NONE, body=exp, pos=FUNCTIONleft}])
-            | FUNCTION ID LPAREN param_list RPAREN EQ exp ([{name=Symbol.symbol ID, params=param_list, result=NONE, body=exp, pos=FUNCTIONleft}])
-            | FUNCTION ID LPAREN RPAREN COLON ID EQ exp ([{name=Symbol.symbol ID1, params=[], result=SOME(Symbol.symbol ID2, ID2left), body=exp, pos=FUNCTIONleft}])
-            | FUNCTION ID LPAREN param_list RPAREN COLON ID EQ exp ([{name=Symbol.symbol ID1, params=param_list, result=SOME(Symbol.symbol ID2, ID2left), body=exp, pos=FUNCTIONleft}])
+function_dec_group: function_dec ([function_dec])
+                  | function_dec function_dec_group (function_dec :: function_dec_group)
+
+function_dec: FUNCTION ID LPAREN RPAREN EQ exp ({name=Symbol.symbol ID, params=[], result=NONE, body=exp, pos=FUNCTIONleft})
+            | FUNCTION ID LPAREN param_list RPAREN EQ exp ({name=Symbol.symbol ID, params=param_list, result=NONE, body=exp, pos=FUNCTIONleft})
+            | FUNCTION ID LPAREN RPAREN COLON ID EQ exp ({name=Symbol.symbol ID1, params=[], result=SOME(Symbol.symbol ID2, ID2left), body=exp, pos=FUNCTIONleft})
+            | FUNCTION ID LPAREN param_list RPAREN COLON ID EQ exp ({name=Symbol.symbol ID1, params=param_list, result=SOME(Symbol.symbol ID2, ID2left), body=exp, pos=FUNCTIONleft})
 
 param_list: param			([param])
     | param COMMA param_list		(param :: param_list)
@@ -184,9 +191,12 @@ param: ID COLON ID			({name=Symbol.symbol ID1, escape=ref true, typ=Symbol.symbo
 var_dec: VAR ID ASSIGN exp		(A.VarDec{name=Symbol.symbol ID, escape=ref true, typ=NONE, init=exp, pos=VARleft})
     | VAR ID COLON ID ASSIGN exp	(A.VarDec{name=Symbol.symbol ID1, escape=ref true, typ=SOME(Symbol.symbol ID2, ID2left), init=exp, pos=VARleft})  
 
-type_dec: TYPE ID EQ ID		([{name=Symbol.symbol ID1, ty=A.NameTy(Symbol.symbol ID2, ID2left), pos=TYPEleft}])
-    | TYPE ID EQ record_type	([{name=Symbol.symbol ID, ty=record_type, pos=TYPEleft}])
-    | TYPE ID EQ array_type		([{name=Symbol.symbol ID, ty=array_type, pos=TYPEleft}])
+type_dec_group: type_dec ([type_dec])
+              | type_dec type_dec_group (type_dec :: type_dec_group)
+
+type_dec: TYPE ID EQ ID		({name=Symbol.symbol ID1, ty=A.NameTy(Symbol.symbol ID2, ID2left), pos=TYPEleft})
+    | TYPE ID EQ record_type	({name=Symbol.symbol ID, ty=record_type, pos=TYPEleft})
+    | TYPE ID EQ array_type		({name=Symbol.symbol ID, ty=array_type, pos=TYPEleft})
 
 record_type: LBRACE field_list RBRACE	(A.RecordTy(field_list))
     | LBRACE RBRACE (A.RecordTy([]))

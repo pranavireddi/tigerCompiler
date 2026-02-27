@@ -1,0 +1,10 @@
+let
+  function f() = g()
+  function g() = 1
+  type t = int
+  type u = t
+  var x := 3
+  function h() = f()
+in
+  h()
+end
