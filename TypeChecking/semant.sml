@@ -18,12 +18,12 @@ struct
 
     (* #NOTE: need some helper functions to check if types are matching and stuff *)
 
-    fun checkInt(T.INT, pos) = ()
-    | checkInt (_, pos) = Err.error pos "error: integer required"
+    fun checkInt(T.INT, pos) = true
+    | checkInt (_, pos) = (Err.error pos "error: integer required"; false)
 
-    fun checkUnitOrBottom (T.UNIT, pos) = ()
-    | checkUnitOrBottom (T.BOTTOM, pos) = ()
-    | checkUnitOrBottom (_, pos) = Err.error pos "error: unit or bottom type required"
+    fun checkUnitOrBottom (T.UNIT, pos) = true
+    | checkUnitOrBottom (T.BOTTOM, pos) = true
+    | checkUnitOrBottom (_, pos) = (Err.error pos "error: unit or bottom type required"; false)
 
     (* #NOTE: needed to deal with mutual recursion where we might need to resolve types to get to the base types *)
     fun reduceToActualType (tenv, ty) : T.ty =
@@ -54,26 +54,26 @@ struct
         val t2Val = reduceToActualType(tenv, t2)
     in
         (case (t1Val, t2Val) of
-            (T.INT, T.INT) => ()
-            | (T.STRING, T.STRING) => ()
-            | (T.NIL, T.RECORD _) => ()
-            | (T.RECORD _, T.NIL) => ()
-            | (T.UNIT, T.UNIT) => ()
-            | (T.BOTTOM, _) => ()
-            | (_, T.BOTTOM) => ()
+            (T.INT, T.INT) => true
+            | (T.STRING, T.STRING) => true
+            | (T.NIL, T.RECORD _) => true
+            | (T.RECORD _, T.NIL) => true
+            | (T.UNIT, T.UNIT) => true
+            | (T.BOTTOM, _) => true
+            | (_, T.BOTTOM) => true
             | (T.RECORD(_, u1), T.RECORD(_, u2)) =>
-                if u1 = u2 then () else Err.error pos "error: record types do not match"
+                if u1 = u2 then true else (Err.error pos "error: record types do not match"; false)
             | (T.ARRAY(_, u1), T.ARRAY(_, u2)) =>
-                if u1 = u2 then () else Err.error pos "error: array types do not match"
-            | _ => Err.error pos "error: mismatched types")
+                if u1 = u2 then true else (Err.error pos "error: array types do not match"; false)
+            | _ => (Err.error pos "error: mismatched types"; false))
     end
 
     (* #NOTE: mainly for le, lt, ge, gt *)
     fun checkComparable (t1, t2, pos) =
     (case (t1, t2) of
-        (T.INT, T.INT) => ()
-        | (T.STRING, T.STRING) => ()
-        | _ => Err.error pos "error: types not comparable")
+        (T.INT, T.INT) => true
+        | (T.STRING, T.STRING) => true
+        | _ => (Err.error pos "error: types not comparable"; false))
     
     fun checkAssignable (lhsTy, rhsTy, pos, tenv) =
     let
@@ -105,23 +105,23 @@ struct
         val t2Val = reduceToActualType(tenv, t2)
     in
         case (t1Val, t2Val) of
-            (T.INT,    T.INT)    => ()
-            | (T.STRING, T.STRING) => ()
-            | (T.UNIT,   T.UNIT)   => ()
+            (T.INT,    T.INT)    => true
+            | (T.STRING, T.STRING) => true
+            | (T.UNIT,   T.UNIT)   => true
 
             (* #NOTE: this rule is specified in chapter!  *)
-            | (T.RECORD _, T.NIL)  => ()
-            | (T.NIL, T.RECORD _) => ()
+            | (T.RECORD _, T.NIL)  => true
+            | (T.NIL, T.RECORD _) => true
 
             | (T.RECORD(_, u1), T.RECORD(_, u2)) =>
-                if u1 = u2 then () else Err.error pos "error: record types do not match"
+                if u1 = u2 then true else (Err.error pos "error: record types do not match"; false)
             | (T.ARRAY(_, u1), T.ARRAY(_, u2)) =>
-                if u1 = u2 then () else Err.error pos "error: array types do not match"
+                if u1 = u2 then true else (Err.error pos "error: array types do not match"; false)
 
-            | (T.BOTTOM, _) => ()
-            | (_, T.BOTTOM) => ()
+            | (T.BOTTOM, _) => true
+            | (_, T.BOTTOM) => true
 
-            | _ => Err.error pos "error: then and else branches must have the same type"
+            | _ => (Err.error pos "error: then and else branches must have the same type"; false)
     end
 
     (* #NOTE: from ch we need like 4 recursive functions in trexp:
@@ -155,42 +155,104 @@ struct
                         val {ty=lt, ...} = trexp left
                         val {ty=rt, ...} = trexp right
                     in
-                        (case oper of
-                            A.PlusOp   => (checkInt(lt, pos); checkInt(rt, pos); {exp=(), ty=T.INT})
-                        | A.MinusOp  => (checkInt(lt, pos); checkInt(rt, pos); {exp=(), ty=T.INT})
-                        | A.TimesOp  => (checkInt(lt, pos); checkInt(rt, pos); {exp=(), ty=T.INT})
-                        | A.DivideOp => (checkInt(lt, pos); checkInt(rt, pos); {exp=(), ty=T.INT})
+                        if lt = T.BOTTOM orelse rt = T.BOTTOM then
+                            {exp = (), ty = T.BOTTOM}
+                        else
+                            case oper of
+                                A.PlusOp =>
+                                    if lt = T.INT andalso rt = T.INT then
+                                        {exp=(), ty=T.INT}
+                                    else
+                                        (Err.error pos "integer required";
+                                        {exp=(), ty=T.BOTTOM})
 
-                        (* #NOTE: dealing with comparison operators here *)
+                                | A.MinusOp =>
+                                        if lt = T.INT andalso rt = T.INT then
+                                            {exp=(), ty=T.INT}
+                                        else
+                                            (Err.error pos "integer required";
+                                            {exp=(), ty=T.BOTTOM})
 
-                        | A.EqOp     => (checkEqual(tenv, lt, rt, pos); {exp=(), ty=T.INT})
-                        | A.NeqOp    => (checkEqual(tenv, lt, rt, pos); {exp=(), ty=T.INT})
-                            
-                        (* #NOTE: I think we sorta can compare strings and ints here *)
-                        | A.LtOp     => (checkComparable(lt, rt, pos); {exp=(), ty=T.INT})
-                        | A.LeOp     => (checkComparable(lt, rt, pos); {exp=(), ty=T.INT})
-                        | A.GtOp     => (checkComparable(lt, rt, pos); {exp=(), ty=T.INT})
-                        | A.GeOp     => (checkComparable(lt, rt, pos); {exp=(), ty=T.INT}))
+                                | A.TimesOp =>
+                                        if lt = T.INT andalso rt = T.INT then
+                                            {exp=(), ty=T.INT}
+                                        else
+                                            (Err.error pos "integer required";
+                                            {exp=(), ty=T.BOTTOM})
+
+                                | A.DivideOp =>
+                                        if lt = T.INT andalso rt = T.INT then
+                                            {exp=(), ty=T.INT}
+                                        else
+                                            (Err.error pos "integer required";
+                                            {exp=(), ty=T.BOTTOM})
+
+                                | A.EqOp =>
+                                        if checkEqual(tenv, lt, rt, pos) then
+                                            {exp=(), ty=T.INT}
+                                        else
+                                            {exp=(), ty=T.BOTTOM}
+
+                                | A.NeqOp =>
+                                        if checkEqual(tenv, lt, rt, pos) then
+                                            {exp=(), ty=T.INT}
+                                        else
+                                            {exp=(), ty=T.BOTTOM}
+
+                                | A.LtOp =>
+                                        if checkComparable(lt, rt, pos) then
+                                            {exp=(), ty=T.INT}
+                                        else
+                                            {exp=(), ty=T.BOTTOM}
+
+                                | A.LeOp =>
+                                        if checkComparable(lt, rt, pos) then
+                                            {exp=(), ty=T.INT}
+                                        else
+                                            {exp=(), ty=T.BOTTOM}
+
+                                | A.GtOp =>
+                                        if checkComparable(lt, rt, pos) then
+                                            {exp=(), ty=T.INT}
+                                        else
+                                            {exp=(), ty=T.BOTTOM}
+
+                                | A.GeOp =>
+                                        if checkComparable(lt, rt, pos) then
+                                            {exp=(), ty=T.INT}
+                                        else
+                                            {exp=(), ty=T.BOTTOM}
                     end
 
                 (* #NOTE: trying to do boolean exp here? *)
                 |  A.IfExp {test, then', else', pos} =>
                     let
                         val {ty=testTy, ...} = trexp test
-                        val {ty=thenTy, ...} = trexp then'
                     in
                         (* #NOTE: so like i think we need the condition to eval to an int. also can have if/then w/o an else bruh*)
-                        checkInt(testTy, pos);
-                        (case else' of
-                            NONE =>
-                                (checkEqual(tenv, thenTy, T.UNIT, pos);
-                                {exp=(), ty=T.UNIT})
-                        | SOME elseExp =>
-                            let val {ty=elseTy, ...} = trexp elseExp in
-                            (* #NOTE: j need to make sure that return types for then and else match right yeah *)
-                            checkIfBranches(tenv, thenTy, elseTy, pos);
-                            {exp=(), ty=thenTy}
-                            end)
+                        if testTy = T.BOTTOM then
+                            {exp=(), ty=T.BOTTOM}
+                        else if not (checkInt(testTy, pos)) then
+                            {exp=(), ty=T.BOTTOM}
+                        else
+                            (case else' of
+                                NONE =>
+                                    let val {ty=thenTy, ...} = trexp then'
+                                    in
+                                        if thenTy = T.BOTTOM then {exp=(), ty=T.BOTTOM}
+                                        else if checkEqual(tenv, thenTy, T.UNIT, pos) then {exp=(), ty=T.UNIT}
+                                        else {exp=(), ty=T.BOTTOM}
+                                    end
+                            | SOME elseExp =>
+                                let
+                                    val {ty=thenTy, ...} = trexp then'
+                                    val {ty=elseTy, ...} = trexp elseExp
+                                in
+                                (* #NOTE: j need to make sure that return types for then and else match right yeah *)
+                                if thenTy = T.BOTTOM orelse elseTy = T.BOTTOM then {exp=(), ty=T.BOTTOM}
+                                else if checkIfBranches(tenv, thenTy, elseTy, pos) then {exp=(), ty=thenTy}
+                                else {exp=(), ty=T.BOTTOM}
+                                end)
                     end
 
                 (* #NOTE: trying to do while exp here. similar to if but a bit simpler imo *)
@@ -208,7 +270,7 @@ struct
                     end
 
                 (* #NOTE: trying to do for exp here. little unclear what to check for the loop body besides bounds being int lol*)
-                (* #TODO: make sure logic here is correct *)
+                (* #TODO: loop var should be immutable (neg19) *)
                 | A.ForExp {var, escape, lo, hi, body, pos} =>
                     let
                         val {ty=loTy, ...} = trexp lo
@@ -217,15 +279,21 @@ struct
                         val venvNew = Env.addVarVal(venv, var, T.INT)
 
                         (* #NOTE: need lo/hi to be like ints for sure *)
-                        val _ = checkInt(loTy, pos)
-                        val _ = checkInt(hiTy, pos)
                         val _ = loopDepth := !loopDepth + 1
                         val {ty=bodyTy, ...} = transExp(venvNew, tenv, body)
                         val _ = loopDepth := !loopDepth - 1
                     in
-                        (* #NOTE: i think for loop body should not have type right? *)
-                        checkUnitOrBottom(bodyTy, pos);
-                        {exp=(), ty=T.UNIT}
+                        if loTy = T.BOTTOM orelse hiTy = T.BOTTOM then
+                            {exp=(), ty=T.BOTTOM}
+                        else if not (checkInt(loTy, pos)) then
+                            {exp=(), ty=T.BOTTOM}
+                        else if not (checkInt(hiTy, pos)) then
+                            {exp=(), ty=T.BOTTOM}
+                        else if not (checkUnitOrBottom(bodyTy, pos)) then
+                            {exp=(), ty=T.BOTTOM}
+                            (* #NOTE: i think for loop body should not have type right? *)
+                        else
+                            {exp=(), ty=T.UNIT}
                     end
 
                 | A.RecordExp {fields, typ, pos} =>
@@ -328,7 +396,7 @@ struct
                 | A.BreakExp(pos) =>
                     (* #NOTE: need to check if in loop first. then return type bottom *)
                     if !loopDepth <= 0
-                    then (Err.error pos "error: not in a loop"; {exp = (), ty = T.BOTTOM})
+                    then (Err.error pos "error: break not in a loop"; {exp = (), ty = T.BOTTOM})
                     else {exp = (), ty = T.BOTTOM}
 
                 | A.CallExp{func, args, pos} =>
@@ -366,11 +434,10 @@ struct
 
                         (* #NOTE: enventry can also have function stuff and we don't rlly want that *)
                         | SOME (Env.FunEntry funEntry) =>
-                            (Err.error pos "error: found a function ?!"; {exp = (), ty = T.BOTTOM})
+                            (Err.error pos "error: found a function"; {exp = (), ty = T.BOTTOM})
                         | NONE =>
                             (Err.error pos "error: undefined variable"; {exp = (), ty = T.BOTTOM}))
 
-                (* #TODO: check *)
                 (* #NOTE: need to check main variable type, go thru fields and check types?  *)
                 | A.FieldVar (var, sym, pos) => 
                     let
@@ -383,12 +450,15 @@ struct
                                     then SOME fieldType 
                                 else checkMatchField rest
                     in
-                        case reducedBaseType of
-                            T.RECORD(fieldList, _) =>
-                                    (case (checkMatchField(fieldList)) of 
-                                    SOME fieldType => {exp = (), ty=fieldType}
-                                    | NONE => (Err.error pos "error: field not found !"; {exp = (), ty = T.BOTTOM}))
-                            | _ => (Err.error pos "error: not a record !"; {exp = (), ty = T.BOTTOM})
+                        if baseType = T.BOTTOM then
+                            {exp = (), ty = T.BOTTOM}
+                        else
+                            case reducedBaseType of
+                                T.RECORD(fieldList, _) =>
+                                        (case (checkMatchField(fieldList)) of 
+                                        SOME fieldType => {exp = (), ty=fieldType}
+                                        | NONE => (Err.error pos "error: field not found"; {exp = (), ty = T.BOTTOM}))
+                                | _ => (Err.error pos "error: not a record"; {exp = (), ty = T.BOTTOM})
                     end
 
                 | A.SubscriptVar (var, exp, pos) => 
@@ -398,7 +468,7 @@ struct
 
                         val _ = (case actualIndexType of 
                             T.INT => T.INT
-                            | _ => (Err.error pos "error: index it not an int !!";T.BOTTOM))
+                            | _ => (Err.error pos "error: index it not an int";T.BOTTOM))
 
                         val {ty=arrType, ...} = trvar var
                         val actualArrayType = reduceToActualType(tenv, arrType)
@@ -497,7 +567,7 @@ struct
                 { venv = venv, tenv = temp_tenv }
                 end
 
-            (* #TODO: review *)
+            (* #TODO: check for duplicate param names (neg22), getting duplicate param + return type unrecognized (neg23, neg24) *)
             (* #NOTE: 1) wanna add all headers 2) helper func to add the bodies in 3) check for wrong loops 4) make sure no repeats *)
             | trdec(venv, tenv, A.FunctionDec fundeclist) =
                 let
@@ -550,7 +620,7 @@ struct
 
                     fun checkDuplicates ({name, params, body, pos, result}, seen) =
                         if List.exists (fn s => s = S.name name) seen
-                        then (Err.error 0 "error: duplicate function name in function declarations"; seen)
+                        then (Err.error pos "error: duplicate function name in function declarations"; seen)
                         else S.name name :: seen
 
                     val _ = foldl checkDuplicates [] fundeclist
@@ -572,7 +642,7 @@ struct
                     (case Env.findMatchType (tenv, sym) of
                         SOME ty => ty
                         | NONE =>
-                            (Err.error pos "error cannot find matching type in symbol table, undefined maybe ?"; T.BOTTOM))
+                            (Err.error pos "error cannot find matching type in symbol table"; T.BOTTOM))
 
                 | A.RecordTy fields =>
                     let
@@ -582,7 +652,7 @@ struct
                             val fieldTy =
                                     case Env.findMatchType (tenv, typ) of
                                         SOME t => t
-                                    | NONE => (Err.error pos "error cannot find matching type in symbol table, undefined maybe ?"; T.BOTTOM)
+                                    | NONE => (Err.error pos "error cannot find matching type in symbol table"; T.BOTTOM)
                             in
                             ((name, fieldTy) :: trFieldList rest)
                             end
@@ -594,7 +664,7 @@ struct
                     let
                         val arrayEltTy =  case Env.findMatchType (tenv, sym) of
                                         SOME t => t
-                                    | NONE => (Err.error pos "error cannot find matching type in symbol table, undefined maybe ?"; T.BOTTOM)
+                                    | NONE => (Err.error pos "error cannot find matching type in symbol table"; T.BOTTOM)
                     in
                     T.ARRAY (arrayEltTy, ref ())
                     end

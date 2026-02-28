@@ -13,8 +13,8 @@ fun makeTestsneg n =
   List.tabulate (n, fn i =>
       "tests/negative/neg" ^ Int.toString(i+1) ^ ".tig");
 
-val numberedTests = makeTests 9;
-val negTests = makeTestsneg 2;
+val numberedTests = makeTests 20;
+val negTests = makeTestsneg 27;
 
 val allTests = negTests @ numberedTests;
 
