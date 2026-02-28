@@ -39,22 +39,6 @@ struct
             foldl addToSymbolTable S.empty baseSymbols
         end
 
-    (* ALTERNATIVE IMPL
-        I think we want foldl here instead of foldr because theoretically the mapping that came later in the list should "overwrite" the earlier in the case of duplicate mappings so we want to fold through the list from left to right
-        although here since the base env doesnt have duplicates it should work the same 
-        same thing for venv
-        *)
-    (*
-    val base_tenv = 
-        let 
-            val tenv_table = S.empty
-            val baseSymbols = [("int", T.INT), ("string", T.STRING)]
-            fun addToSymbolTable ((sname, ty), table) = S.enter(table, S.symbol sname, ty)
-        in 
-            foldl addToSymbolTable tenv_table baseSymbols
-        end
-    *)
-
     (* #NOTE: var envs are supposed to make whether an identifier is a variable of function.
     function entry details: formals: formal params and like resul: return type.
     base_venv needs to have bindings for predefined functions from appendix (print, flush, getchar, ord, chr, size, substring, concat, not, exit) *)
@@ -76,9 +60,9 @@ struct
 
     fun findMatchType (table, sym) = S.look(table, sym)
 
-    fun addVarVal(table, name, type) = S.enter(table, name, VarEntry ty)
+    fun addVarVal(table, name, ty) = S.enter(table, name, VarEntry ty)
 
-    fun addTypeVal (table, name, type) = S.enter(table, name, ty)
+    fun addTypeVal (table, name, ty) = S.enter(table, name, ty)
 end
 
 
