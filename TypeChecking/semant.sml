@@ -81,22 +81,22 @@ struct
         val rhs = reduceToActualType(tenv, rhsTy)
     in
         case (lhs, rhs) of
-            (T.INT,    T.INT)    => ()
-            | (T.STRING, T.STRING) => ()
-            | (T.UNIT,   T.UNIT)   => ()
+            (T.INT,    T.INT)    => true
+            | (T.STRING, T.STRING) => true
+            | (T.UNIT,   T.UNIT)   => true
 
             (* #NOTE: this rule is specified in chapter!  *)
-            | (T.RECORD _, T.NIL)  => ()
+            | (T.RECORD _, T.NIL)  => true
 
             | (T.RECORD(_, u1), T.RECORD(_, u2)) =>
-                if u1 = u2 then () else Err.error pos "error: record types do not match"
+                if u1 = u2 then true else (Err.error pos "error: record types do not match"; false)
             | (T.ARRAY(_, u1), T.ARRAY(_, u2)) =>
-                if u1 = u2 then () else Err.error pos "error: array types do not match"
+                if u1 = u2 then true else (Err.error pos "error: array types do not match"; false)
 
-            | (T.BOTTOM, _) => ()
-            | (_, T.BOTTOM) => ()
+            | (T.BOTTOM, _) => true
+            | (_, T.BOTTOM) => true
 
-            | _ => Err.error pos "error: cannot assign expression to variable of this type"
+            | _ => (Err.error pos "error: cannot assign expression to variable of this type"; false)
     end
 
     fun checkIfBranches (tenv, t1, t2, pos) =
@@ -259,14 +259,24 @@ struct
                 | A.WhileExp {test, body, pos} =>
                     let
                         val {ty=testTy, ...} = trexp test
-                        val _ = checkInt(testTy, pos)
-                        val _ = loopDepth := !loopDepth + 1
-                        val {ty=bodyTy, ...} = trexp body
-                        val _ = loopDepth := !loopDepth - 1
+                        
                     in
                         (* #NOTE: i think while body should not have type right? *)
-                        checkUnitOrBottom(bodyTy, pos);
-                        {exp=(), ty=T.UNIT}
+                        if testTy = T.BOTTOM then {exp=(), ty=T.BOTTOM}
+                        else if not (checkInt(testTy, pos)) then {exp=(), ty=T.BOTTOM}
+                        else
+                            let
+                                val _ = loopDepth := !loopDepth + 1
+                                val {ty=bodyTy, ...} = trexp body
+                                val _ = loopDepth := !loopDepth - 1
+                            in
+                                if bodyTy = T.BOTTOM then {exp=(), ty=T.BOTTOM}
+                                else if not (checkUnitOrBottom(bodyTy, pos)) then
+                                    {exp=(), ty=T.BOTTOM}
+                                    (* #NOTE: i think for loop body should not have type right? *)
+                                else
+                                    {exp=(), ty=T.UNIT}
+                            end
                     end
 
                 (* #NOTE: trying to do for exp here. little unclear what to check for the loop body besides bounds being int lol*)
@@ -328,13 +338,13 @@ struct
                                             let     
                                                 fun checkPair ((decl_sym, decl_ty), (supp_sym, supp_ty, supp_pos)) =
                                                     if (S.name decl_sym <> S.name supp_sym) then 
-                                                        Err.error supp_pos "Error: record field name doesn't match declared field name"
+                                                        (Err.error supp_pos "Error: record field name doesn't match declared field name"; false)
                                                     else
                                                         checkAssignable(decl_ty, supp_ty, supp_pos, tenv)
                                         
                                                 val field_pairs = ListPair.zip(declfields, supplied) 
                                             in 
-                                                List.app checkPair field_pairs
+                                                List.app (fn p => (checkPair p; ())) field_pairs
                                             end
                                     in () end
                               | T.BOTTOM    => ()  (*should have already reported error earlier*)
@@ -346,22 +356,23 @@ struct
                 | A.ArrayExp {typ, size, init, pos} => 
                     let
                         val {ty = initTy, ...} = trexp init
-
                         val {ty = sizeTy, ...} = trexp size
-                        val _ = checkInt(sizeTy, pos)
 
                         val arrayTy =  case Env.findMatchType(tenv, typ) of 
                                         NONE    => (Err.error pos "Error: undefined array type"; T.BOTTOM)
                                       | SOME t  => (reduceToActualType(tenv, t)) (*array type matched with previously declared type in tenv*)
-                        
-                        (* verify if arrayTy - the TYPE that the symbol matched with in tenv - is indeed an array *)
-                        val _ = 
-                            case arrayTy of 
-                                T.ARRAY (ty, unique) => checkAssignable(ty, initTy, pos, tenv)
-                              | T.BOTTOM    => () (*should've already indicated error above*)
-                              | _           => Err.error pos "Error: type name for array does not refer to an array type"
+                            
                     in
-                        {exp = (), ty = arrayTy}
+                        if initTy = T.BOTTOM orelse sizeTy = T.BOTTOM then {exp = (), ty = T.BOTTOM}
+                        else if not (checkInt(sizeTy, pos)) then {exp = (), ty = T.BOTTOM}
+                        else
+                        (* verify if arrayTy - the TYPE that the symbol matched with in tenv - is indeed an array *)
+                            case arrayTy of 
+                                T.ARRAY (ty, unique) => 
+                                    if checkAssignable(ty, initTy, pos, tenv) then {exp = (), ty = arrayTy}
+                                    else {exp = (), ty = T.BOTTOM}
+                              | T.BOTTOM    => {exp = (), ty = T.BOTTOM} (*should've already indicated error above*)
+                              | _           => (Err.error pos "Error: type name for array does not refer to an array type"; {exp = (), ty = T.BOTTOM})
                     end
 
                 | A.AssignExp {var, exp, pos} =>
@@ -464,21 +475,14 @@ struct
                 | A.SubscriptVar (var, exp, pos) => 
                     let 
                         val {ty=indexType, ...} = transExp (venv, tenv, exp)
-                        val actualIndexType = reduceToActualType(tenv, indexType)
-
-                        val _ = (case actualIndexType of 
-                            T.INT => T.INT
-                            | _ => (Err.error pos "error: index it not an int";T.BOTTOM))
-
                         val {ty=arrType, ...} = trvar var
-                        val actualArrayType = reduceToActualType(tenv, arrType)
-
-                        val elementsType = 
-                            (case actualArrayType of 
-                                T.ARRAY (elTy, _) => elTy
-                                | _ => (Err.error pos "error: not an array"; T.BOTTOM))
                     in
-                        {exp=(), ty=elementsType}
+                        if indexType = T.BOTTOM orelse arrType = T.BOTTOM then {exp=(), ty=T.BOTTOM}
+                        else if not(checkInt(indexType,pos)) then {exp=(), ty=T.BOTTOM}
+                        else
+                            case reduceToActualType(tenv, arrType) of 
+                                T.ARRAY (elTy, _) =>  {exp=(), ty=elTy}
+                                | _ => (Err.error pos "error: not an array"; {exp=(), ty=T.BOTTOM})
                     end
             in
             trvar var
@@ -567,7 +571,7 @@ struct
                 { venv = venv, tenv = temp_tenv }
                 end
 
-            (* #TODO: check for duplicate param names (neg22), getting duplicate param + return type unrecognized (neg23, neg24) *)
+            (* #TODO: check for duplicate param names (neg22), getting duplicate param + return type unrecognized errors (neg23, neg24) *)
             (* #NOTE: 1) wanna add all headers 2) helper func to add the bodies in 3) check for wrong loops 4) make sure no repeats *)
             | trdec(venv, tenv, A.FunctionDec fundeclist) =
                 let
@@ -624,7 +628,7 @@ struct
                         else S.name name :: seen
 
                     val _ = foldl checkDuplicates [] fundeclist
-                    val _ = List.app checkFun fundeclist
+                    val _ = List.app (fn f => (checkFun f; ())) fundeclist
                 in
                     { venv = venvNew, tenv = tenv }
                 end

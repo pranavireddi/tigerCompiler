@@ -1,3 +1,5 @@
+(* Used for testing lol I just copy paste into command line and edit the number of test cases for pos and neg but there is def an easier way *)
+
 fun run file =
   ( print ("Running: " ^ file ^ "\n");
     Main.main file;
@@ -14,7 +16,7 @@ fun makeTestsneg n =
       "tests/negative/neg" ^ Int.toString(i+1) ^ ".tig");
 
 val numberedTests = makeTests 20;
-val negTests = makeTestsneg 27;
+val negTests = makeTestsneg 36;
 
 val allTests = negTests @ numberedTests;
 
