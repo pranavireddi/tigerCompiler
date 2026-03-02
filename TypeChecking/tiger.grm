@@ -47,6 +47,8 @@ structure A = Absyn
   | let_inside of (A.exp * A.pos) list
   | fun_inside of A.exp list
   | fun_options of A.exp list
+  | not_func_dec of A.dec list
+  | not_type_dec of A.dec list
 
 %pos int
 %verbose
@@ -168,21 +170,43 @@ let_inside: exp expseq ((exp, expleft) :: expseq)
  | ([])
   
 (* allows for 0 or more declarations in a sequence. *)
-decs: ([])
-    | dec decs		(dec :: decs)
+(* decs: ([])
+    | dec decs		(dec :: decs) *)
+(* 
+#NOTE: so we need to make sure that we can have groups of functions and types bc of mutual recursion.
+like this is needed when we do the two pass filling in of headers in the type checker. our prev code only supported singleton
+declarations of functions and types, which is wrong! :'( *)
+decs: function_dec_group not_func_dec		(A.FunctionDec(function_dec_group) :: not_func_dec)
+    | var_dec	decs		        (var_dec :: decs)
+    | type_dec_group	not_type_dec		(A.TypeDec(type_dec_group) :: not_type_dec)
+    | ([])
 
-(* for consecutive decs of the same type, we need to group them to enable mutual recursion *)
-dec: function_dec_group		(A.FunctionDec(function_dec_group))
-    | var_dec			        (var_dec)
-    | type_dec_group			(A.TypeDec(type_dec_group))
+(* #NOTE: this is the main logic for handling the mutual recursion issues. i was thinking that adding strict rules that
+we keep parsing func decs until we see a type or var dec. this helps with the ambiguity we had earlier abt whether
+to continue to parse or just reduce. same with type. *)
+not_func_dec: var_dec decs (var_dec :: decs)
+              | type_dec_group not_type_dec (A.TypeDec(type_dec_group) :: not_type_dec)
+              | ([])
 
+not_type_dec: var_dec decs (var_dec :: decs)
+              | function_dec_group	not_func_dec	(A.FunctionDec(function_dec_group) :: not_func_dec)
+              | ([])
+
+(* NOTE: the reson that this does not work bc this grammar is not clear abt whether we should reduce after seeing a single func dec
+or if we should keep shifting to parse more. 
 function_dec_group: function_dec ([function_dec])
-                  | function_dec function_dec_group (function_dec :: function_dec_group)
+                  | function_dec function_dec_group (function_dec :: function_dec_group) *)
 
-function_dec: FUNCTION ID LPAREN RPAREN EQ exp ({name=Symbol.symbol ID, params=[], result=NONE, body=exp, pos=FUNCTIONleft})
-            | FUNCTION ID LPAREN param_list RPAREN EQ exp ({name=Symbol.symbol ID, params=param_list, result=NONE, body=exp, pos=FUNCTIONleft})
-            | FUNCTION ID LPAREN RPAREN COLON ID EQ exp ({name=Symbol.symbol ID1, params=[], result=SOME(Symbol.symbol ID2, ID2left), body=exp, pos=FUNCTIONleft})
-            | FUNCTION ID LPAREN param_list RPAREN COLON ID EQ exp ({name=Symbol.symbol ID1, params=param_list, result=SOME(Symbol.symbol ID2, ID2left), body=exp, pos=FUNCTIONleft})
+(* #NOTE: do not need tail stuff since i'm p sure we have LR parsing here *)
+function_dec_group: FUNCTION function_dec ([function_dec])
+                  | FUNCTION function_dec function_dec_group (function_dec :: function_dec_group)
+
+
+(* #NOTE: got rid of FUNCTION here bc we just move that into our function_dec_group logic to help deal with figuring out if we should parse more or reduce *)
+function_dec: ID LPAREN RPAREN EQ exp ({name=Symbol.symbol ID, params=[], result=NONE, body=exp, pos=IDleft})
+            | ID LPAREN param_list RPAREN EQ exp ({name=Symbol.symbol ID, params=param_list, result=NONE, body=exp, pos=IDleft})
+            | ID LPAREN RPAREN COLON ID EQ exp ({name=Symbol.symbol ID1, params=[], result=SOME(Symbol.symbol ID2, ID2left), body=exp, pos=ID1left})
+            | ID LPAREN param_list RPAREN COLON ID EQ exp ({name=Symbol.symbol ID1, params=param_list, result=SOME(Symbol.symbol ID2, ID2left), body=exp, pos=ID1left})
 
 param_list: param			([param])
     | param COMMA param_list		(param :: param_list)
@@ -191,12 +215,18 @@ param: ID COLON ID			({name=Symbol.symbol ID1, escape=ref true, typ=Symbol.symbo
 var_dec: VAR ID ASSIGN exp		(A.VarDec{name=Symbol.symbol ID, escape=ref true, typ=NONE, init=exp, pos=VARleft})
     | VAR ID COLON ID ASSIGN exp	(A.VarDec{name=Symbol.symbol ID1, escape=ref true, typ=SOME(Symbol.symbol ID2, ID2left), init=exp, pos=VARleft})  
 
-type_dec_group: type_dec ([type_dec])
-              | type_dec type_dec_group (type_dec :: type_dec_group)
+(* #NOTE: same issue as w function dec! need to be able to deterministically decide whether to keep parsing or stop.
+key logic for this is actually handled in the decs part to enforce strict rules abt when you must keep parsing (basically when 
+you see continuous TYPE or FUNCTION keywords.) i think this might work for now. @alisha maybe take a look later *)
+(* type_dec_group: type_dec ([type_dec])
+              | type_dec type_dec_group (type_dec :: type_dec_group) *)
 
-type_dec: TYPE ID EQ ID		({name=Symbol.symbol ID1, ty=A.NameTy(Symbol.symbol ID2, ID2left), pos=TYPEleft})
-    | TYPE ID EQ record_type	({name=Symbol.symbol ID, ty=record_type, pos=TYPEleft})
-    | TYPE ID EQ array_type		({name=Symbol.symbol ID, ty=array_type, pos=TYPEleft})
+type_dec_group: TYPE type_dec ([type_dec])
+              | TYPE type_dec type_dec_group (type_dec :: type_dec_group)
+
+type_dec: ID EQ ID		({name=Symbol.symbol ID1, ty=A.NameTy(Symbol.symbol ID2, ID2left), pos=ID1left})
+    | ID EQ record_type	({name=Symbol.symbol ID, ty=record_type, pos=IDleft})
+    | ID EQ array_type		({name=Symbol.symbol ID, ty=array_type, pos=IDleft})
 
 record_type: LBRACE field_list RBRACE	(A.RecordTy(field_list))
     | LBRACE RBRACE (A.RecordTy([]))
@@ -208,4 +238,3 @@ array_type: ARRAY OF ID		(A.ArrayTy(Symbol.symbol ID, IDleft))
 
 expseq: SEMICOLON exp expseq ((exp, expleft) :: expseq)
   | ([])
-
