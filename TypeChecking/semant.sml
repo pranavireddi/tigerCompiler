@@ -286,7 +286,7 @@ struct
                         val {ty=loTy, ...} = trexp lo
                         val {ty=hiTy, ...} = trexp hi
 
-                        val venvNew = Env.addVarVal(venv, var, T.INT)
+                        val venvNew = Env.addReadOnlyVar(venv, var, T.INT)
 
                         (* #NOTE: need lo/hi to be like ints for sure *)
                         val _ = loopDepth := !loopDepth + 1
