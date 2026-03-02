@@ -1,5 +1,0 @@
-let
-  function f() : int = "hello"
-in
-  0
-end
