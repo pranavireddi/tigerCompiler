@@ -286,7 +286,7 @@ struct
                         val {ty=loTy, ...} = trexp lo
                         val {ty=hiTy, ...} = trexp hi
 
-                        val venvNew = Env.addVarVal(venv, var, T.INT)
+                        val venvNew = Env.addReadOnlyVarVal(venv, var, T.INT)
 
                         (* #NOTE: need lo/hi to be like ints for sure *)
                         val _ = loopDepth := !loopDepth + 1
@@ -379,9 +379,19 @@ struct
                     let
                         val {ty=varTy, ...} = transVar(venv, tenv, var)
                         val {ty=expTy, ...} = trexp exp
-                    in
+
                         (* #NOTE: think j need to make sure that type of val matches intended type *)
-                        checkAssignable(varTy, expTy, pos, tenv);
+                        val _ = checkAssignable(varTy, expTy, pos, tenv);
+
+                        val _ =
+                            case var of
+                            A.SimpleVar(sym, _) =>
+                                (case S.look(venv, sym) of
+                                SOME (Env.VarEntry {readonly=true, ...}) =>
+                                    Err.error pos ("error: loop variable is read-only: " ^ S.name sym)
+                                | _ => ())
+                            | _ => ()
+                    in
                         {exp=(), ty=T.UNIT}
                     end
 
@@ -440,8 +450,8 @@ struct
                 A.SimpleVar(sym, pos) =>
                     (case Env.findMatchType(venv, sym) of
 
-                        SOME (Env.VarEntry ty) =>
-                            {exp = (), ty = ty}
+                        SOME (Env.VarEntry {typeVal, readonly}) =>
+                            {exp = (), ty = typeVal}
 
                         (* #NOTE: enventry can also have function stuff and we don't rlly want that *)
                         | SOME (Env.FunEntry funEntry) =>
@@ -571,7 +581,6 @@ struct
                 { venv = venv, tenv = temp_tenv }
                 end
 
-            (* #TODO: check for duplicate param names (neg22), getting duplicate param + return type unrecognized errors (neg23, neg24) *)
             (* #NOTE: 1) wanna add all headers 2) helper func to add the bodies in 3) check for wrong loops 4) make sure no repeats *)
             | trdec(venv, tenv, A.FunctionDec fundeclist) =
                 let
