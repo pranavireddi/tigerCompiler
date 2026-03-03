@@ -16,7 +16,7 @@ fun makeTestsneg n =
       "tests/negative/neg" ^ Int.toString(i+1) ^ ".tig");
 
 val numberedTests = makeTests 20;
-val negTests = makeTestsneg 36;
+val negTests = makeTestsneg 38;
 
 val allTests = negTests @ numberedTests;
 
