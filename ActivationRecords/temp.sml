@@ -16,7 +16,7 @@ local structure F = Format
       fun postinc x = let val i = !x in x := i+1; i end
       val labs = ref 0
  in
-    fun newlabel() = Symbol.symbol(F.format "L%d" [F.INT(postinc labs)])
+    fun newLabel() = Symbol.symbol(F.format "L%d" [F.INT(postinc labs)])
     val namedLabel = Symbol.symbol
 end
 

@@ -587,9 +587,9 @@ struct
                 in
                 { venv = venv, tenv = temp_tenv }
                 end
-                
+
             (* #NOTE: 1) wanna add all headers 2) helper func to add the bodies in 3) check for wrong loops 4) make sure no repeats *)
-            | trdec(venv, tenv, A.FunctionDec fundeclist) =
+            | trdec(venv, tenv, A.FunctionDec fundeclist, level) =
                 let
                     fun lookupType (sym, pos, what) =
                         case Env.findMatchType(tenv, sym) of
@@ -600,7 +600,7 @@ struct
                         lookupType(retVal, retPos, "Return")
 
                     fun checkParam {name, escape, typ, pos} =
-                        { name = name, ty = lookupType(typ, pos, "Parameter") }
+                        { name = name, ty = lookupType(typ, pos, "Parameter"), escape = escape }
 
                     fun lookupTypeQuiet (sym, pos, what) =
                         case Env.findMatchType(tenv, sym) of
@@ -608,7 +608,7 @@ struct
                         | NONE => T.BOTTOM
                     
                     fun checkParamQuiet {name, escape, typ, pos} =
-                        { name = name, ty = lookupTypeQuiet(typ, pos, "Parameter") }
+                        { name = name, ty = lookupTypeQuiet(typ, pos, "Parameter"), escape = escape }
 
                     fun checkDuplicateParams ({name, pos, ...} : Absyn.field, seen) =
                     let val n = S.name name
@@ -617,39 +617,53 @@ struct
                         then (Err.error pos "duplicate parameter in function declaration"; seen)
                         else n :: seen
                     end
-
+                    
+                    (* #TODO: need to store level and label here for the different function declarations *)
                     fun enterHeader ({name, params, body, pos, result}, venvAcc) =
                         let
-                            val formals = map #ty (map checkParam params)
+                            val checkedParams = map checkParam params
+                            val formals = map #ty checkedParams
+                            val escapes = map #escape checkedParams
                             val resTy =
                                 case result of
                                     SOME (retVal, retPos) => checkReturnType(retVal, retPos)
                                     | NONE => T.UNIT
+
+                            val funLabel = Temp.newLabel()
+                            val formalEscapes = true :: map (fn {escape, ...} => !escape) checkedParams
+                            val funLevel = Tr.newLevel {parent=level, name=funLabel, formals=formalEscapes}
                         in
                             (* #NOTE: can add helper func but kinda lazy lol *)
-                            S.enter(venvAcc, name, Env.FunEntry{formals=formals, result=resTy})
+                            S.enter(venvAcc, name, Env.FunEntry{formals=formals, result=resTy, level=funLevel, label=funLabel})
                         end
 
                     val venvNew = foldl enterHeader venv fundeclist
 
                     fun checkFun ({name, params, body, pos, result}) =
                         let
-                        val (formals, resTy) =
+                        val (formals, resTy, funLevel) =
                             case Env.findMatchType(venvNew, name) of
-                                SOME (Env.FunEntry {formals, result}) => (formals, result)
-                                | _ =>(Err.error pos ("internal error: missing function header: " ^ S.name name);([], T.BOTTOM))
+                                SOME (Env.FunEntry {formals, result, level, label}) => (formals, result, level)
+                                | _ =>(Err.error pos ("internal error: missing function header: " ^ S.name name);([], T.BOTTOM, level))
 
                         val _ = foldl checkDuplicateParams [] params
                         val paramsNew = map checkParamQuiet params
-                        fun enterParam ({name, ty}, venvAcc) = Env.addVarVal(venvAcc, name, ty)
-                        val venvWithParams = foldl enterParam venvNew paramsNew
+                        fun enterParam (({name, escape, ty}, access), venvAcc) = Env.addVarVal(venvAcc, name, ty, access)
+
+                        val formalAccesses =
+                            case Tr.formals funLevel of
+                                _ :: rest => rest
+                                | [] => []
+
+                        val paramAccessPairs = ListPair.zip(paramsNew, formalAccesses)
+                        val venvWithParams = foldl enterParam venvNew paramAccessPairs
 
                         (* #NOTE: can save prev loop depth if in while/for *)
                         val savedLoopDepth = !loopDepth
 
                         (* #NOTE: we need this bc a func can be in a for or while, and break should not be allowed in the func i think *)
                         val _ = loopDepth := 0
-                        val {ty=bodyTy, ...} = transExp(venvWithParams, tenv, body)
+                        val {ty=bodyTy, exp=bodyExp} = transExp(venvWithParams, tenv, body, funLevel)
                         val _ = loopDepth := savedLoopDepth
                         in
                             checkAssignable(resTy, bodyTy, pos, tenv)
@@ -666,11 +680,10 @@ struct
                     { venv = venvNew, tenv = tenv }
                 end
 
-            and folddec(dec, {venv, tenv}) = trdec(venv, tenv, dec)
+            and folddec(dec, {venv, tenv}) = trdec(venv, tenv, dec, level)
         in
             foldl folddec {venv=venv, tenv=tenv} decs
         end
-        
 
     (* #NOTE: return conversion from ast type info to like our internal type stuff from the type dec above *)
     and transTy(tenv, ty) : T.ty =
