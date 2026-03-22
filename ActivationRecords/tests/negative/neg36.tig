@@ -1,0 +1,6 @@
+let
+  type arr = array of int
+  function f(a:int): int = a
+in
+  f(arr[1 + "a"] of 0)
+end
