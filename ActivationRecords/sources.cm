@@ -17,6 +17,7 @@ translate.sml
 MipsFrame.sml
 frame.sml
 temp.sml
+findescape.sml
 $/smlnj-lib.cm
 $/ml-yacc-lib.cm
 $/basis.cm

@@ -5,7 +5,7 @@ FindEscape: look for escaping variables, record info in escape fields of the abs
     - traversal function is a mutual recursion on absyn esps and vars, like the type checker, use a map binding bool ref (escaped or not escaped)
 *)
 
-structure FindEscape: sig val FindEscape: Absyn.exp -> unit end =
+structure FindEscape: sig val findEscape: Absyn.exp -> unit end =
 struct
     structure Err = ErrorMsg 
 
@@ -18,7 +18,7 @@ struct
                 (case (Symbol.look(env, symbol)) of 
                     SOME (decdepth, escape_ref) => 
                         if decdepth < d             (* usage is nested deeper than dec -> make var escape bc now var needs to be passed to nested fn via static link *)
-                            then escape_ref := true;
+                            then escape_ref := true
                             else ()                 (* escape ref stays false *)
                   | NONE => (Err.error pos "Error: usage of undeclared variables."))
         
@@ -45,7 +45,7 @@ struct
           | Absyn.RecordExp{fields, typ, pos} => 
                 app (fn (_, exp, _) => traverseExp(env, d, exp)) fields
 
-          | Absyn.SeqExp{exps} => app (fn (exp, _) => 
+          | Absyn.SeqExp(exps) => app (fn (exp, _) => 
                 traverseExp(env, d, exp)) exps
 
           | Absyn.AssignExp{var, exp, pos} => (
@@ -71,8 +71,8 @@ struct
                     val _ = escape := false
                     val env' = Symbol.enter(env, var, (d, escape))
                 in
-                    traverseExp(env, d, lo)
-                    traverseExp(env, d, hi)
+                    traverseExp(env, d, lo);
+                    traverseExp(env, d, hi);
                     traverseExp(env', d, body)
                 end
 
@@ -95,7 +95,7 @@ struct
         let 
             fun trdecs(dec, env) = 
                 case dec of 
-                    Absyn.FunctionDec{decs} => 
+                    Absyn.FunctionDec(decs) => 
                         let 
                             fun traverseFundecs({name, params, result, body, pos}: Absyn.fundec) = (* this needs to add params into env' and use env' to traverse through body *)
                                 let 
@@ -117,12 +117,12 @@ struct
                         Symbol.enter(env, name, (d, escape))
                     )
 
-                  | Absyn.TypeDec{decs} => env (* type declaraction never triggers escape change bc no variables involved*)
+                  | Absyn.TypeDec(decs) => env (* type declaraction never triggers escape change bc no variables involved*)
                     
         in 
             foldl trdecs env s
         end 
 
-    fun FindEscape(prog: Absyn.exp) : unit = 
+    fun findEscape(prog: Absyn.exp) : unit = 
         traverseExp(Symbol.empty, 0, prog) 
 end 
