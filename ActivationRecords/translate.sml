@@ -4,7 +4,7 @@ pointer to parent stack frame *)
 signature TRANSLATE =
 sig
     type level
-    type access
+    type access  (* NOT the same as frame.access*)
     type exp
 
     val outermost : level

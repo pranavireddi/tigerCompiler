@@ -624,7 +624,7 @@ struct
                             val resTy =
                                 case result of
                                     SOME (retVal, retPos) => checkReturnType(retVal, retPos)
-                                    | NONE => T.UNIT
+                                  | NONE => T.UNIT
                         in
                             (* #NOTE: can add helper func but kinda lazy lol *)
                             S.enter(venvAcc, name, Env.FunEntry{formals=formals, result=resTy})
