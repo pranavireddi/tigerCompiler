@@ -5,6 +5,7 @@ struct
     fun main filename =
         (let
             val absyn = Parse.parse filename
+            val _ = FindEscape.findEscape absyn
             val _ = Semant.transProg absyn
         in
             ()
