@@ -18,6 +18,7 @@ MipsFrame.sml
 frame.sml
 temp.sml
 findescape.sml
+printEscape.sml
 $/smlnj-lib.cm
 $/ml-yacc-lib.cm
 $/basis.cm
