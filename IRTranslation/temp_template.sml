@@ -1,5 +1,5 @@
 (* make this an abstraction sometime *)
-structure Temp =
+structure Temp : TEMP =
 struct
     type temp = int
     val temps = ref 100
@@ -16,8 +16,8 @@ local structure F = Format
       fun postinc x = let val i = !x in x := i+1; i end
       val labs = ref 0
  in
-    fun newLabel() = Symbol.symbol(F.format "L%d" [F.INT(postinc labs)])
-    val namedLabel = Symbol.symbol
+    fun newlabel() = Symbol.symbol(F.format "L%d" [F.INT(postinc labs)])
+    val namedlabel = Symbol.symbol
 end
 
 
