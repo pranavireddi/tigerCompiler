@@ -728,7 +728,12 @@ struct
     let
         val tenv = Env.base_tenv
         val venv = Env.base_venv
-        val level = Tr.outermost
+        val level =
+            Tr.newLevel {
+                parent = Tr.outermost,
+                name = Temp.namedLabel "main",
+                formals = []
+            }    
     in
         transExp(venv, tenv, exp, level)
     end

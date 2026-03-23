@@ -6,6 +6,7 @@ struct
         (let
             val absyn = Parse.parse filename
             val _ = FindEscape.findEscape absyn
+            val _ = PrintEscape.printEscapes absyn
             val _ = Semant.transProg absyn
         in
             ()
