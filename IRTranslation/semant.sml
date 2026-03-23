@@ -124,6 +124,24 @@ struct
             | _ => (Err.error pos "error: then and else branches must have the same type"; false)
     end
 
+    fun translateBinOp oper =
+        case oper of
+            A.PlusOp   => Tree.PLUS
+            | A.MinusOp  => Tree.MINUS
+            | A.TimesOp  => Tree.MUL
+            | A.DivideOp => Tree.DIV
+            | _ => raise Fail "not a binary arithmetic operator"
+
+    fun translateRelOp oper =
+        case oper of
+            A.EqOp  => Tree.EQ
+            | A.NeqOp => Tree.NE
+            | A.LtOp  => Tree.LT
+            | A.LeOp  => Tree.LE
+            | A.GtOp  => Tree.GT
+            | A.GeOp  => Tree.GE
+            | _ => raise Fail "not a relational operator"
+
     (* #NOTE: from ch we need like 4 recursive functions in trexp:
     - transVar, 
     - ransExp, 
@@ -139,179 +157,183 @@ struct
     type expty = {exp: Translate.exp, ty: Types.ty}
     *)
 
-    fun transExp (venv, tenv, exp, level: Translate.level) : expty =
+    fun transExp (venv, tenv, exp, level: Translate.level, breakLabel : Temp.label option) : expty =
     let
-        fun trexp (expVal : A.exp, level: Translate.level) : expty =    
+        fun trexp (expVal : A.exp, level: Translate.level, breakLabel : Temp.label option) : expty =    
             case expVal of 
                 (* NOTE: base cases for literals and variables which sholud like always have these types *)
                 A.VarExp v => transVar(venv, tenv, v, level)
-                | A.IntExp(intVal) => {exp=(), ty=T.INT} 
-                | A.StringExp(stringVal, pos) => {exp=(), ty=T.STRING}
-                | A.NilExp => {exp=(), ty=T.NIL}
+                | A.IntExp(intVal) => {exp=Tr.intExp intVal, ty=T.INT} 
+                | A.StringExp(stringVal, pos) => {exp=Tr.stringExp stringVal, ty=T.STRING}
+                | A.NilExp => {exp=Tr.nilExp(), ty=T.NIL}
 
             (* #NOTE: trying to take care of arithmetic expressions here! *)
                 | A.OpExp {left, oper, right, pos} =>
                     let
-                        val {ty=lt, ...} = trexp (left, level)
-                        val {ty=rt, ...} = trexp (right, level)
+                        val {exp=leftExp, ty=lt} = trexp (left, level, breakLabel)
+                        val {exp=rightExp, ty=rt} = trexp (right, level, breakLabel)
                     in
                         if lt = T.BOTTOM orelse rt = T.BOTTOM then
-                            {exp = (), ty = T.BOTTOM}
+                            {exp = Tr.nilExp(), ty = T.BOTTOM}
                         else
                             case oper of
                                 A.PlusOp =>
                                     if lt = T.INT andalso rt = T.INT then
-                                        {exp=(), ty=T.INT}
+                                        {exp=Tr.binOpExp(translateBinOp oper, leftExp, rightExp), ty=T.INT}
                                     else
                                         (Err.error pos "integer required";
-                                        {exp=(), ty=T.BOTTOM})
+                                        {exp=Tr.nilExp(), ty=T.BOTTOM})
 
                                 | A.MinusOp =>
                                         if lt = T.INT andalso rt = T.INT then
-                                            {exp=(), ty=T.INT}
+                                            {exp=Tr.binOpExp(translateBinOp oper, leftExp, rightExp), ty=T.INT}
                                         else
                                             (Err.error pos "integer required";
-                                            {exp=(), ty=T.BOTTOM})
+                                            {exp=Tr.nilExp(), ty=T.BOTTOM})
 
                                 | A.TimesOp =>
                                         if lt = T.INT andalso rt = T.INT then
-                                            {exp=(), ty=T.INT}
+                                            {exp=Tr.binOpExp(translateBinOp oper, leftExp, rightExp), ty=T.INT}
                                         else
                                             (Err.error pos "integer required";
-                                            {exp=(), ty=T.BOTTOM})
+                                            {exp=Tr.nilExp(), ty=T.BOTTOM})
 
                                 | A.DivideOp =>
                                         if lt = T.INT andalso rt = T.INT then
-                                            {exp=(), ty=T.INT}
+                                            {exp=Tr.binOpExp(translateBinOp oper, leftExp, rightExp), ty=T.INT}
                                         else
                                             (Err.error pos "integer required";
-                                            {exp=(), ty=T.BOTTOM})
+                                            {exp=Tr.nilExp(), ty=T.BOTTOM})
 
                                 | A.EqOp =>
                                         if checkEqual(tenv, lt, rt, pos) then
-                                            {exp=(), ty=T.INT}
+                                            {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
                                         else
-                                            {exp=(), ty=T.BOTTOM}
+                                            {exp=Tr.nilExp(), ty=T.BOTTOM}
 
                                 | A.NeqOp =>
                                         if checkEqual(tenv, lt, rt, pos) then
-                                            {exp=(), ty=T.INT}
+                                            {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
                                         else
-                                            {exp=(), ty=T.BOTTOM}
+                                            {exp=Tr.nilExp(), ty=T.BOTTOM}
 
                                 | A.LtOp =>
                                         if checkComparable(lt, rt, pos) then
-                                            {exp=(), ty=T.INT}
+                                            {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
                                         else
-                                            {exp=(), ty=T.BOTTOM}
+                                            {exp=Tr.nilExp(), ty=T.BOTTOM}
 
                                 | A.LeOp =>
                                         if checkComparable(lt, rt, pos) then
-                                            {exp=(), ty=T.INT}
+                                            {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
                                         else
-                                            {exp=(), ty=T.BOTTOM}
+                                            {exp=Tr.nilExp(), ty=T.BOTTOM}
 
                                 | A.GtOp =>
                                         if checkComparable(lt, rt, pos) then
-                                            {exp=(), ty=T.INT}
+                                            {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
                                         else
-                                            {exp=(), ty=T.BOTTOM}
+                                            {exp=Tr.nilExp(), ty=T.BOTTOM}
 
                                 | A.GeOp =>
                                         if checkComparable(lt, rt, pos) then
-                                            {exp=(), ty=T.INT}
+                                            {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
                                         else
-                                            {exp=(), ty=T.BOTTOM}
+                                            {exp=Tr.nilExp(), ty=T.BOTTOM}
                     end
 
                 (* #NOTE: trying to do boolean exp here? *)
                 |  A.IfExp {test, then', else', pos} =>
                     let
-                        val {ty=testTy, ...} = trexp (test, level)
+                        val {exp=testExp, ty=testTy} = trexp (test, level, breakLabel)
                     in
                         (* #NOTE: so like i think we need the condition to eval to an int. also can have if/then w/o an else bruh*)
                         if testTy = T.BOTTOM then
-                            {exp=(), ty=T.BOTTOM}
+                            {exp=Tr.nilExp(), ty=T.BOTTOM}
                         else if not (checkInt(testTy, pos)) then
-                            {exp=(), ty=T.BOTTOM}
+                            {exp=Tr.nilExp(), ty=T.BOTTOM}
                         else
                             (case else' of
                                 NONE =>
-                                    let val {ty=thenTy, ...} = trexp (then', level)
+                                    let val {exp=thenExp, ty=thenTy} = trexp (then', level, breakLabel)
                                     in
-                                        if thenTy = T.BOTTOM then {exp=(), ty=T.BOTTOM}
-                                        else if checkEqual(tenv, thenTy, T.UNIT, pos) then {exp=(), ty=T.UNIT}
-                                        else {exp=(), ty=T.BOTTOM}
+                                        if thenTy = T.BOTTOM then {exp=Tr.nilExp(), ty=T.BOTTOM}
+                                        else if checkEqual(tenv, thenTy, T.UNIT, pos) then {exp=Tr.ifExp(testExp, thenExp, NONE), ty=T.UNIT}
+                                        else {exp=Tr.nilExp(), ty=T.BOTTOM}
                                     end
                             | SOME elseExp =>
                                 let
-                                    val {ty=thenTy, ...} = trexp (then', level)
-                                    val {ty=elseTy, ...} = trexp (elseExp, level)
+                                    val {exp=thenExp, ty=thenTy} = trexp (then', level, breakLabel)
+                                    val {exp=elseExp, ty=elseTy} = trexp (elseExp, leve, breaklabel)
                                 in
                                 (* #NOTE: j need to make sure that return types for then and else match right yeah *)
-                                if thenTy = T.BOTTOM orelse elseTy = T.BOTTOM then {exp=(), ty=T.BOTTOM}
-                                else if checkIfBranches(tenv, thenTy, elseTy, pos) then {exp=(), ty=thenTy}
-                                else {exp=(), ty=T.BOTTOM}
+                                if thenTy = T.BOTTOM orelse elseTy = T.BOTTOM then {exp=Tr.nilExp(), ty=T.BOTTOM}
+                                else if checkIfBranches(tenv, thenTy, elseTy, pos) then {exp=Tr.ifExp(testExp, thenExp, SOME elseExp), ty=thenTy}
+                                else {exp=Tr.nilExp(), ty=T.BOTTOM}
                                 end)
                     end
 
                 (* #NOTE: trying to do while exp here. similar to if but a bit simpler imo *)
                 | A.WhileExp {test, body, pos} =>
                     let
-                        val {ty=testTy, ...} = trexp (test, level)
+                        val {exp=testExp, ty=testTy} = trexp(test, level, breakLabel)
+                        val doneLabel = Tmp.newLabel()
                         
                     in
                         (* #NOTE: i think while body should not have type right? *)
-                        if testTy = T.BOTTOM then {exp=(), ty=T.BOTTOM}
-                        else if not (checkInt(testTy, pos)) then {exp=(), ty=T.BOTTOM}
+                        if testTy = T.BOTTOM then {exp=Tr.nilExp(), ty=T.BOTTOM}
+                        else if not (checkInt(testTy, pos)) then {exp=Tr.nilExp(), ty=T.BOTTOM}
                         else
                             let
                                 val _ = loopDepth := !loopDepth + 1
-                                val {ty=bodyTy, ...} = trexp (body, level)
+                                val {exp=bodyExp, ty=bodyTy} = trexp (body, level, SOME doneLabel)
                                 val _ = loopDepth := !loopDepth - 1
                                 (* #TODO: need some kind of way to keep track of loop depth in level ? *)
                             in
-                                if bodyTy = T.BOTTOM then {exp=(), ty=T.BOTTOM}
+                                if bodyTy = T.BOTTOM then {exp=Tr.nilExp(), ty=T.BOTTOM}
                                 else if not (checkUnitOrBottom(bodyTy, pos)) then
-                                    {exp=(), ty=T.BOTTOM}
+                                    {exp=Tr.nilExp(), ty=T.BOTTOM}
                                     (* #NOTE: i think for loop body should not have type right? *)
                                 else
-                                    {exp=(), ty=T.UNIT}
+                                    {exp=Tr.whileExp(testExp, bodyExp, doneLabel), ty=T.UNIT}
                             end
                     end
 
                 (* #NOTE: trying to do for exp here. little unclear what to check for the loop body besides bounds being int lol*)
                 | A.ForExp {var, escape, lo, hi, body, pos} =>
                     let
-                        val {ty=loTy, ...} = trexp (lo, level)
-                        val {ty=hiTy, ...} = trexp (hi, level)
+                        val {exp=loExp, ty=loTy} = trexp (lo, level, breakLabel)
+                        val {exp=hiExp, ty=hiTy} = trexp (hi, level, breakLabel)
 
                         val venvNew = Env.addReadOnlyVarVal(venv, var, T.INT, Tr.allocLocal(level) true)
+                        val doneLab = Tmp.newLabel()
+                        val varTrExp = Tr.simpleVar(acc, level)
 
                         (* #NOTE: need lo/hi to be like ints for sure *)
                         (* #TODO: figure out what level is here *)
                         val _ = loopDepth := !loopDepth + 1
-                        val {ty=bodyTy, ...} = transExp(venvNew, tenv, body, level)
+                        val {exp=bodyExp, ty=bodyTy} = transExp(venvNew, tenv, body, level, SOME doneLabel)
                         val _ = loopDepth := !loopDepth - 1
                     in
                         if loTy = T.BOTTOM orelse hiTy = T.BOTTOM then
-                            {exp=(), ty=T.BOTTOM}
+                            {exp=Tr.nilExp(), ty=T.BOTTOM}
                         else if not (checkInt(loTy, pos)) then
-                            {exp=(), ty=T.BOTTOM}
+                            {exp=Tr.nilExp(), ty=T.BOTTOM}
                         else if not (checkInt(hiTy, pos)) then
-                            {exp=(), ty=T.BOTTOM}
+                            {exp=Tr.nilExp(), ty=T.BOTTOM}
                         else if not (checkUnitOrBottom(bodyTy, pos)) then
-                            {exp=(), ty=T.BOTTOM}
+                            {exp=Tr.nilExp(), ty=T.BOTTOM}
                             (* #NOTE: i think for loop body should not have type right? *)
                         else
-                            {exp=(), ty=T.UNIT}
+                            {exp=Tr.forExp(varTrExp, loExp, hiExp, bodyExp, doneLabel), ty=T.UNIT}
                     end
 
+                (* #TODO: recordExp translation module *)
                 | A.RecordExp {fields, typ, pos} =>
                     let                         
                         fun checkSuppliedField (name, exp, pos) =         (*convert the ast exp for each field to a Type*)
                             let 
-                                val {ty = fty, ...} = trexp (exp, level)
+                                val {ty = fty, ...} = trexp (exp, level, breakLabel)
                             in 
                                 (name, fty, pos)
                             end
@@ -356,30 +378,30 @@ struct
                 
                 | A.ArrayExp {typ, size, init, pos} => 
                     let
-                        val {ty = initTy, ...} = trexp (init, level)
-                        val {ty = sizeTy, ...} = trexp (size, level)
+                        val {exp=initExp, ty=initTy} = trexp(init, level, breakLabel)
+                        val {exp=sizeExp, ty=sizeTy} = trexp(size, level, breakLabel)
 
                         val arrayTy =  case Env.findMatchType(tenv, typ) of 
                                         NONE    => (Err.error pos "Error: undefined array type"; T.BOTTOM)
                                       | SOME t  => (reduceToActualType(tenv, t)) (*array type matched with previously declared type in tenv*)
                             
                     in
-                        if initTy = T.BOTTOM orelse sizeTy = T.BOTTOM then {exp = (), ty = T.BOTTOM}
-                        else if not (checkInt(sizeTy, pos)) then {exp = (), ty = T.BOTTOM}
+                        if initTy = T.BOTTOM orelse sizeTy = T.BOTTOM then {exp = Tr.nilExp(), ty = T.BOTTOM}
+                        else if not (checkInt(sizeTy, pos)) then {exp = Tr.nilExp(), ty = T.BOTTOM}
                         else
                         (* verify if arrayTy - the TYPE that the symbol matched with in tenv - is indeed an array *)
                             case arrayTy of 
                                 T.ARRAY (ty, unique) => 
-                                    if checkAssignable(ty, initTy, pos, tenv) then {exp = (), ty = arrayTy}
-                                    else {exp = (), ty = T.BOTTOM}
-                              | T.BOTTOM    => {exp = (), ty = T.BOTTOM} (*should've already indicated error above*)
-                              | _           => (Err.error pos "Error: type name for array does not refer to an array type"; {exp = (), ty = T.BOTTOM})
+                                    if checkAssignable(ty, initTy, pos, tenv) then {exp = Tr.arrayExp(sizeExp, initExp), ty = arrayTy}
+                                    else {exp = Tr.nilExp(), ty = T.BOTTOM}
+                              | T.BOTTOM    => {exp = Tr.nilExp(), ty = T.BOTTOM} (*should've already indicated error above*)
+                              | _           => (Err.error pos "Error: type name for array does not refer to an array type"; {exp = Tr.nilExp(), ty = T.BOTTOM})
                     end
 
                 | A.AssignExp {var, exp, pos} =>
                     let
-                        val {ty=varTy, ...} = transVar(venv, tenv, var, level)
-                        val {ty=expTy, ...} = trexp (exp, level)
+                        val {exp=varExp, ty=varTy} = transVar(venv, tenv, var, level, breakLabel)
+                        val {exp=rhsExp, ty=expTy} = trexp(exp, level, breakLabel)
 
                         (* #NOTE: think j need to make sure that type of val matches intended type *)
                         val _ = checkAssignable(varTy, expTy, pos, tenv);
@@ -393,36 +415,41 @@ struct
                                 | _ => ())
                             | _ => ()
                     in
-                        {exp=(), ty=T.UNIT}
+                        {exp=Tr.assignExp(varExp, rhsExp), ty=T.UNIT}
                     end
 
+                (* TODO: finish seqExp *)
                 | A.SeqExp(exps) =>
                     (* #NOTE: think general idea is to make sure type works for every exp in exps. we return last exp type idk ? 
                     also, for ref (exp, pos) *)
                     let
                     fun checkExps [] = T.UNIT
                         (* #NOTE: base case w last exp in exps, wanna return type of it, assuming no other type errors. *)
-                        | checkExps [(exp, pos)] = #ty (trexp (exp, level))
-                        | checkExps ((exp, pos)::otherExps) = (trexp (exp, level); checkExps otherExps)
+                        | checkExps [(exp, pos)] = #ty (trexp (exp, level, breakLabel))
+                        | checkExps ((exp, pos)::otherExps) = (trexp (exp, level, breakLabel); checkExps otherExps)
                     in
-                    {exp=(), ty=checkExps exps}
+                    {exp=Tr.seqExp exps, ty=checkExps exps}
                     end
 
                 | A.LetExp{decs, body, pos} => 
                     let 
-                        val {venv=venv_new, tenv=tenv_new} = transDec(venv, tenv, decs, level)
+                        val {venv=venv_new, tenv=tenv_new} = transDec(venv, tenv, decs, level, break)
                     in 
-                        transExp(venv_new, tenv_new, body, level)
+                        transExp(venv_new, tenv_new, body, level, breakLabel)
                     end
 
 
                 (* #TODO: not sure what needs to change here ugh *)
-                | A.BreakExp(pos) =>
+                | A.BreakExp pos =>
                     (* #NOTE: need to check if in loop first. then return type bottom *)
-                    if !loopDepth <= 0
-                    then (Err.error pos "error: break not in a loop"; {exp = (), ty = T.BOTTOM})
-                    else {exp = (), ty = T.BOTTOM}
+                    if !loopDepth <= 0 then
+                        (Err.error pos "error: break not in a loop"; {exp = Tr.nilExp (), ty = T.BOTTOM})
+                    else
+                        (case breakLabel of
+                            NONE => (Err.error pos "internal error: missing break label"; {exp = Tr.nilExp (), ty = T.BOTTOM})
+                        | SOME labelVal => {exp = Tr.breakExp labelVal, ty = T.UNIT})
 
+                (* #TODO: need to finish callExp *)
                 | A.CallExp{func, args, pos} =>
 
                     case Env.findMatchType(venv,func) of
@@ -430,7 +457,7 @@ struct
                         SOME(Env.FunEntry{formals, result, level=newLevel, label}) =>
                             let fun checkArgs ([], []) = ()
                                 | checkArgs((fTy :: flist), (a :: alist)) = 
-                                    let val {ty=argTy, ...} = trexp (a, level)
+                                    let val {ty=argTy, ...} = trexp (a, level, breakLabel)
                                     in
                                         checkAssignable(fTy, argTy, pos, tenv);
                                         checkArgs(flist, alist)
@@ -441,32 +468,32 @@ struct
                                 {exp = (), ty = result}
                             end
 
-                        | _ => (Err.error pos "error: not a function"; {exp = (), ty = T.BOTTOM})
+                        | _ => (Err.error pos "error: not a function"; {exp = Tr.nilExp(), ty = T.BOTTOM})
             in
-            trexp (exp, level)
+            trexp (exp, level, breakLabel)
             end
             
-    and transVar(venv, tenv, var, level: Translate.level) : expty =
-        let fun trvar(var: A.var, level: Translate.level) : expty =
+    and transVar(venv, tenv, var, level: Translate.level, breakLabel : Temp.label option) : expty =
+        let fun trvar(var: A.var, level: Translate.level, breakLabel : Temp.label option) : expty =
             case var of
 
                 A.SimpleVar(sym, pos) =>
                     (case Env.findMatchType(venv, sym) of
 
                         SOME (Env.VarEntry {typeVal, readonly, access}) =>
-                            {exp = (), ty = typeVal}
+                            {exp = Tr.simpleVar(access, level), ty = typeVal}
                         
                         (* #TODO: make sure that env changes are here *)
                         (* #NOTE: enventry can also have function stuff and we don't rlly want that *)
                         | SOME (Env.FunEntry funEntry) =>
-                            (Err.error pos "error: found a function"; {exp = (), ty = T.BOTTOM})
+                            (Err.error pos "error: found a function"; {exp = Tr.nilExp(), ty = T.BOTTOM})
                         | NONE =>
-                            (Err.error pos "error: undefined variable"; {exp = (), ty = T.BOTTOM}))
+                            (Err.error pos "error: undefined variable"; {exp = Tr.nilExp(), ty = T.BOTTOM}))
 
                 (* #NOTE: need to check main variable type, go thru fields and check types?  *)
                 | A.FieldVar (var, sym, pos) => 
                     let
-                        val {ty=baseType, ... } = trvar(var, level)
+                        val {exp=baseExp, ty=baseType} = trvar(var, level, breakLabel)
                         val reducedBaseType = reduceToActualType(tenv, baseType)
                         
                         fun checkMatchField [] = NONE
@@ -476,30 +503,30 @@ struct
                                 else checkMatchField rest
                     in
                         if baseType = T.BOTTOM then
-                            {exp = (), ty = T.BOTTOM}
+                            {exp = Tr.nilExp(), ty = T.BOTTOM}
                         else
                             case reducedBaseType of
                                 T.RECORD(fieldList, _) =>
                                         (case (checkMatchField(fieldList)) of 
-                                        SOME fieldType => {exp = (), ty=fieldType}
-                                        | NONE => (Err.error pos "error: field not found"; {exp = (), ty = T.BOTTOM}))
-                                | _ => (Err.error pos "error: not a record"; {exp = (), ty = T.BOTTOM})
+                                        SOME fieldType => {exp = Tr.fieldVar(baseExp, index), ty=fieldType}
+                                        | NONE => (Err.error pos "error: field not found"; {exp = Tr.nilExp(), ty = T.BOTTOM}))
+                                | _ => (Err.error pos "error: not a record"; {exp = Tr.nilExp(), ty = T.BOTTOM})
                     end
 
                 | A.SubscriptVar (var, exp, pos) => 
                     let 
-                        val {ty=indexType, ...} = transExp (venv, tenv, exp, level)
-                        val {ty=arrType, ...} = trvar(var, level)
+                        val {exp=indexExp, ty=indexType} = transExp (venv, tenv, exp, level, breakLabel)
+                        val {exp=arrExp, ty=arrType} = trvar(var, level, breakLabel)
                     in
-                        if indexType = T.BOTTOM orelse arrType = T.BOTTOM then {exp=(), ty=T.BOTTOM}
-                        else if not(checkInt(indexType,pos)) then {exp=(), ty=T.BOTTOM}
+                        if indexType = T.BOTTOM orelse arrType = T.BOTTOM then {exp=Tr.nilExp(), ty=T.BOTTOM}
+                        else if not(checkInt(indexType,pos)) then {exp=Tr.nilExp(), ty=T.BOTTOM}
                         else
                             case reduceToActualType(tenv, arrType) of 
-                                T.ARRAY (elTy, _) =>  {exp=(), ty=elTy}
-                                | _ => (Err.error pos "error: not an array"; {exp=(), ty=T.BOTTOM})
+                                T.ARRAY (elTy, _) =>  {exp=Tr.subscriptVar(arrExp, indexExp), ty=elTy}
+                                | _ => (Err.error pos "error: not an array"; {exp=Tr.nilExp(), ty=T.BOTTOM})
                     end
             in
-            trvar (var, level)
+            trvar (var, level, breakLabel)
             end
 
 
@@ -508,13 +535,13 @@ struct
     (* #NOTE: so like there's two way to do this, depending on recursive or nonrecursive. 
         since we need non-recursive, i'm just gonna do that right now to avoid having to rewrite? *)
 
-    and transDec(venv, tenv, decs, level: Translate.level) = 
+    and transDec(venv, tenv, decs, level: Translate.level, break) = 
         let fun
             
             (* #NOTE: we need like 2 cases here. 1) when there is an explicit type annotation (stored in typ) *)
             trdec(venv, tenv, A.VarDec({name, escape, typ, init, pos}), level: Translate.level) =
                 let
-                    val {ty=initTypeVal, ...} = transExp(venv, tenv, init, level)
+                    val {ty=initTypeVal, ...} = transExp(venv, tenv, init, level, break)
                     val reducedTypeVal = reduceToActualType(tenv, initTypeVal)
                     (* #NOTE: setting escape to true by default here. can use the escape param later when it's configured *)
                     val acc = Tr.allocLocal(level) true
@@ -663,7 +690,7 @@ struct
 
                         (* #NOTE: we need this bc a func can be in a for or while, and break should not be allowed in the func i think *)
                         val _ = loopDepth := 0
-                        val {ty=bodyTy, exp=bodyExp} = transExp(venvWithParams, tenv, body, funLevel)
+                        val {ty=bodyTy, exp=bodyExp} = transExp(venvWithParams, tenv, body, funLevel, break)
                         val _ = loopDepth := savedLoopDepth
                         in
                             checkAssignable(resTy, bodyTy, pos, tenv)
@@ -724,13 +751,15 @@ struct
             end
 
     (* #NOTE: from the book, it seems like transProg just is supposed to call transExp ? *)
+    (* #NOTE: need to reurn a translate.fragList *)
+    (* #TODO: make sure this is correct. *)
     fun transProg exp =
     let
         val tenv = Env.base_tenv
         val venv = Env.base_venv
         val level = Tr.outermost
     in
-        transExp(venv, tenv, exp, level)
+        transExp(venv, tenv, exp, level, break)
     end
 
 end

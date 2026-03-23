@@ -34,13 +34,13 @@ sig
 
     val ifExp : exp * exp * exp option -> exp
     val whileExp : exp * exp * T.label -> exp
-    val forExp : exp * exp * exp * T.label -> exp
+    val forExp : exp * exp * exp * exp * T.label -> exp    
     val breakExp : T.label -> exp
 
     val callExp: T.label * level * level * exp list -> exp
 
-    val binOpExp : Absyn.oper * exp * exp -> exp
-    val relOpExp : Absyn.oper * exp * exp -> exp
+    val binOpExp : Tr.binop * exp * exp -> exp
+    val relOpExp : Tr.relop * exp * exp -> exp
 
     val procEntryExit : {level: level, body: exp} -> unit
     val getResult : unit -> Fr.frag list
@@ -232,10 +232,12 @@ struct
 
 
     (* #NOTE: specifically for things like add, subtract, multiple, divide *)
-    fun binOpExp (oper : Tr.BINOP, left : exp, right : exp) : exp = Ex(Tr.BINOP(oper, unEx left, unEx right))
+    fun binOpExp (oper : Tr.binop, left : exp, right : exp) : exp = Ex(Tr.BINOP(oper, unEx left, unEx right))
 
     (* #NOTE: specifically for things like eq, neq, lt, le, gt, ge *)
-    fun relOpExp (oper : Tr.BINOP, left : exp, right : exp) : exp = Cx(fn (t, f) => Tr.CJUMP(oper, unEx left, unEx right, t, f))
+    fun relOpExp (oper : Tr.relop, left : exp, right : exp) : exp = Cx(fn (t, f) => Tr.CJUMP(oper, unEx left, unEx right, t, f))
+
+    (* #TODO: do we need separate string comparison stuff? *)
 
     fun assignExp (left : exp, right : exp) : exp = Nx(Tr.MOVE(unEx left, unEx right))
 
@@ -299,8 +301,42 @@ struct
             ])
         end
 
-    (* #TODO: finish forExp *)
-    fun forExp (varExp : exp, loExp : exp, hiExp : exp, doneLab : T.label) : exp = ()
+    fun forExp (varExp : exp, loExp : exp, hiExp : exp, bodyExp : exp, doneLabel : T.label) : exp =
+        let
+            val limitTemp = T.newtemp()
+
+            val startLabel = T.newLabel()
+            val bodyLabel = T.newLabel()
+            val testLabel = T.newLabel()
+
+            val varVal = unEx varExp
+            val loVal = unEx loExp
+            val hiVal = unEx hiExp
+            val bodyStm = unNx bodyExp
+        in
+            Nx (
+                seq [
+                    Tr.MOVE(varVal, loVal),
+                    Tr.MOVE(Tr.TEMP limitTemp, hiVal),
+
+                    Tr.CJUMP(Tr.LE, varVal, Tr.TEMP limitTemp, startLabel, doneLabel),
+
+                    Tr.LABEL startLabel,
+                    bodyStm,
+
+                    Tr.LABEL testLabel,
+
+                    Tr.CJUMP(Tr.LT, varVal, Tr.TEMP limitTemp, bodyLabel, doneLabel),
+
+                    Tr.LABEL bodyLabel,
+                    Tr.MOVE(varVal, Tr.BINOP(Tr.PLUS, varVal, Tr.CONST 1)),
+                    bodyStm,
+                    Tr.JUMP(Tr.NAME testLabel, [testLabel]),
+
+                    Tr.LABEL doneLabel
+                ]
+            )
+        end
 
     fun breakExp doneLabel =
         Nx(Tr.JUMP(Tr.NAME doneLabel, [doneLabel]))

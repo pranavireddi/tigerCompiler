@@ -1,3 +1,4 @@
+(* #NOTE: exp is for expressions that produce a value. stm is for statements -> side effects and control flow. *)
 signature TREE = 
 sig 
   type label = Temp.label
