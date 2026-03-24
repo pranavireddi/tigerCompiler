@@ -178,19 +178,51 @@ struct
         end
 
     (* #NOTE: array or record access. do offset from the base addr of arr/rec? *)
+    (*
+    TODO: later on we should prob also add runtime check for array boundarys (if array has 4 elements, accessing the 5th should throw out of bounds error)
+          could be done by adding a size at the start of the array in initarray function and check from there (happens after nil check)
+          skipping that for now since we aren't implementing initarray yet.
+    *)
     fun subscriptVar (arrExp : exp, indexExp : exp) : exp =
         let
-            val offset =
-                Tr.BINOP(Tr.MUL, unEx indexExp, Tr.CONST Fr.wordSize)
+            val offset = Tr.BINOP(Tr.MUL, unEx indexExp, Tr.CONST Fr.wordSize)
+
+            (* for nil pointer checks *)
+            val oklabel = T.newLabel()
+            val errlabel = T.newLabel()
+            val r = T.newTemp()
         in
-            Ex(Tr.MEM(Tr.BINOP(Tr.PLUS, unEx arrExp, offset)))
+            Ex(Tr.ESEQ(
+                seq[
+                    Tr.MOVE(Tr.TEMP r, unEx arrExp),
+                    Tr.CJUMP(Tr.EQ, Tr.TEMP r, Tr.CONST 0, errlabel, oklabel),
+                    Tr.LABEL errlabel,
+                    Tr.EXP(Fr.externalCall("nilerror", [])),
+                    Tr.LABEL oklabel
+                ],
+                Tr.MEM(Tr.BINOP(Tr.PLUS, Tr.TEMP r, offset)) 
+                ))
         end
 
     fun fieldVar (recordExp : exp, indexVal : int) : exp =
         let
             val offset = indexVal * Fr.wordSize
+
+            (* for nil pointer checks *)
+            val oklabel = T.newLabel()
+            val errlabel = T.newLabel()
+            val r = T.newTemp()
         in
-            Ex(Tr.MEM(Tr.BINOP(Tr.PLUS, unEx recordExp, Tr.CONST offset)))
+            Ex(Tr.ESEQ(
+                seq[
+                    Tr.MOVE(Tr.TEMP r, unEx recordExp),
+                    Tr.CJUMP(Tr.EQ, Tr.TEMP r, Tr.CONST 0, errlabel, oklabel),
+                    Tr.LABEL errlabel,
+                    Tr.EXP(Fr.externalCall("nilerror", [])),
+                    Tr.LABEL oklabel
+                ],
+                Tr.MEM(Tr.BINOP(Tr.PLUS, Tr.TEMP r, Tr.CONST offset)))
+                )
         end
 
     fun intExp i = Ex(Tr.CONST i)
@@ -340,8 +372,8 @@ struct
 
             val staticLink =
                 case fLvl of
-                    OUTERMOST =>
-                        raise Fail "can't static link w outermost"
+                    OUTERMOST => Tr.CONST 0 (* dummy value bc shouldn't be travesing staticlinks at outermost, but we don't want it to crash here *)
+                        (* raise Fail "can't static link w outermost" *)
                   | LEVEL {parent = calleeParent, ...} =>
                         followingStaticLinks(callLvl, calleeParent, Tr.TEMP Fr.FP)
         in
