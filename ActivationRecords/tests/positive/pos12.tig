@@ -1,0 +1,7 @@
+/* Mutual recursion */
+let
+  function f(x:int):int = g(x)
+  function g(x:int):int = f(x)
+in
+  f(1)
+end

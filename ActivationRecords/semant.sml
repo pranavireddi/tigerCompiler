@@ -5,6 +5,8 @@ struct
     structure T = Types
     structure S = Symbol
     structure Err = ErrorMsg
+    structure Tr = Translate
+    structure Tmp = Temp
 
     (* #NOTE: can find in env.sml *)
     type venv = Env.enventry S.table
@@ -13,8 +15,6 @@ struct
     type expty = {exp: Translate.exp, ty: T.ty}
 
     val loopDepth = ref 0
-
-    (* #MYSTERIOUS: umm so like unclear what's up w error handling rn, did not look at that lmao. *)
 
     (* #NOTE: need some helper functions to check if types are matching and stuff *)
 
@@ -139,12 +139,12 @@ struct
     type expty = {exp: Translate.exp, ty: Types.ty}
     *)
 
-    fun transExp (venv, tenv, exp) : expty =
+    fun transExp (venv, tenv, exp, level: Translate.level) : expty =
     let
-        fun trexp (expVal : A.exp) : expty =    
+        fun trexp (expVal : A.exp, level: Translate.level) : expty =    
             case expVal of 
                 (* NOTE: base cases for literals and variables which sholud like always have these types *)
-                A.VarExp v => transVar(venv, tenv, v)
+                A.VarExp v => transVar(venv, tenv, v, level)
                 | A.IntExp(intVal) => {exp=(), ty=T.INT} 
                 | A.StringExp(stringVal, pos) => {exp=(), ty=T.STRING}
                 | A.NilExp => {exp=(), ty=T.NIL}
@@ -152,8 +152,8 @@ struct
             (* #NOTE: trying to take care of arithmetic expressions here! *)
                 | A.OpExp {left, oper, right, pos} =>
                     let
-                        val {ty=lt, ...} = trexp left
-                        val {ty=rt, ...} = trexp right
+                        val {ty=lt, ...} = trexp (left, level)
+                        val {ty=rt, ...} = trexp (right, level)
                     in
                         if lt = T.BOTTOM orelse rt = T.BOTTOM then
                             {exp = (), ty = T.BOTTOM}
@@ -227,7 +227,7 @@ struct
                 (* #NOTE: trying to do boolean exp here? *)
                 |  A.IfExp {test, then', else', pos} =>
                     let
-                        val {ty=testTy, ...} = trexp test
+                        val {ty=testTy, ...} = trexp (test, level)
                     in
                         (* #NOTE: so like i think we need the condition to eval to an int. also can have if/then w/o an else bruh*)
                         if testTy = T.BOTTOM then
@@ -237,7 +237,7 @@ struct
                         else
                             (case else' of
                                 NONE =>
-                                    let val {ty=thenTy, ...} = trexp then'
+                                    let val {ty=thenTy, ...} = trexp (then', level)
                                     in
                                         if thenTy = T.BOTTOM then {exp=(), ty=T.BOTTOM}
                                         else if checkEqual(tenv, thenTy, T.UNIT, pos) then {exp=(), ty=T.UNIT}
@@ -245,8 +245,8 @@ struct
                                     end
                             | SOME elseExp =>
                                 let
-                                    val {ty=thenTy, ...} = trexp then'
-                                    val {ty=elseTy, ...} = trexp elseExp
+                                    val {ty=thenTy, ...} = trexp (then', level)
+                                    val {ty=elseTy, ...} = trexp (elseExp, level)
                                 in
                                 (* #NOTE: j need to make sure that return types for then and else match right yeah *)
                                 if thenTy = T.BOTTOM orelse elseTy = T.BOTTOM then {exp=(), ty=T.BOTTOM}
@@ -258,7 +258,7 @@ struct
                 (* #NOTE: trying to do while exp here. similar to if but a bit simpler imo *)
                 | A.WhileExp {test, body, pos} =>
                     let
-                        val {ty=testTy, ...} = trexp test
+                        val {ty=testTy, ...} = trexp (test, level)
                         
                     in
                         (* #NOTE: i think while body should not have type right? *)
@@ -267,8 +267,9 @@ struct
                         else
                             let
                                 val _ = loopDepth := !loopDepth + 1
-                                val {ty=bodyTy, ...} = trexp body
+                                val {ty=bodyTy, ...} = trexp (body, level)
                                 val _ = loopDepth := !loopDepth - 1
+                                (* #TODO: need some kind of way to keep track of loop depth in level ? *)
                             in
                                 if bodyTy = T.BOTTOM then {exp=(), ty=T.BOTTOM}
                                 else if not (checkUnitOrBottom(bodyTy, pos)) then
@@ -280,17 +281,17 @@ struct
                     end
 
                 (* #NOTE: trying to do for exp here. little unclear what to check for the loop body besides bounds being int lol*)
-                (* #TODO: loop var should be immutable (neg19) *)
                 | A.ForExp {var, escape, lo, hi, body, pos} =>
                     let
-                        val {ty=loTy, ...} = trexp lo
-                        val {ty=hiTy, ...} = trexp hi
+                        val {ty=loTy, ...} = trexp (lo, level)
+                        val {ty=hiTy, ...} = trexp (hi, level)
 
-                        val venvNew = Env.addReadOnlyVarVal(venv, var, T.INT)
+                        val venvNew = Env.addReadOnlyVarVal(venv, var, T.INT, Tr.allocLocal(level) true)
 
                         (* #NOTE: need lo/hi to be like ints for sure *)
+                        (* #TODO: figure out what level is here *)
                         val _ = loopDepth := !loopDepth + 1
-                        val {ty=bodyTy, ...} = transExp(venvNew, tenv, body)
+                        val {ty=bodyTy, ...} = transExp(venvNew, tenv, body, level)
                         val _ = loopDepth := !loopDepth - 1
                     in
                         if loTy = T.BOTTOM orelse hiTy = T.BOTTOM then
@@ -310,7 +311,7 @@ struct
                     let                         
                         fun checkSuppliedField (name, exp, pos) =         (*convert the ast exp for each field to a Type*)
                             let 
-                                val {ty = fty, ...} = trexp exp 
+                                val {ty = fty, ...} = trexp (exp, level)
                             in 
                                 (name, fty, pos)
                             end
@@ -355,8 +356,8 @@ struct
                 
                 | A.ArrayExp {typ, size, init, pos} => 
                     let
-                        val {ty = initTy, ...} = trexp init
-                        val {ty = sizeTy, ...} = trexp size
+                        val {ty = initTy, ...} = trexp (init, level)
+                        val {ty = sizeTy, ...} = trexp (size, level)
 
                         val arrayTy =  case Env.findMatchType(tenv, typ) of 
                                         NONE    => (Err.error pos "Error: undefined array type"; T.BOTTOM)
@@ -377,8 +378,8 @@ struct
 
                 | A.AssignExp {var, exp, pos} =>
                     let
-                        val {ty=varTy, ...} = transVar(venv, tenv, var)
-                        val {ty=expTy, ...} = trexp exp
+                        val {ty=varTy, ...} = transVar(venv, tenv, var, level)
+                        val {ty=expTy, ...} = trexp (exp, level)
 
                         (* #NOTE: think j need to make sure that type of val matches intended type *)
                         val _ = checkAssignable(varTy, expTy, pos, tenv);
@@ -401,19 +402,21 @@ struct
                     let
                     fun checkExps [] = T.UNIT
                         (* #NOTE: base case w last exp in exps, wanna return type of it, assuming no other type errors. *)
-                        | checkExps [(exp, pos)] = #ty (trexp exp)
-                        | checkExps ((exp, pos)::otherExps) = (trexp exp; checkExps otherExps)
+                        | checkExps [(exp, pos)] = #ty (trexp (exp, level))
+                        | checkExps ((exp, pos)::otherExps) = (trexp (exp, level); checkExps otherExps)
                     in
                     {exp=(), ty=checkExps exps}
                     end
 
                 | A.LetExp{decs, body, pos} => 
                     let 
-                        val {venv=venv_new, tenv=tenv_new} = transDec(venv, tenv, decs)
+                        val {venv=venv_new, tenv=tenv_new} = transDec(venv, tenv, decs, level)
                     in 
-                        transExp(venv_new, tenv_new, body)
+                        transExp(venv_new, tenv_new, body, level)
                     end
-                
+
+
+                (* #TODO: not sure what needs to change here ugh *)
                 | A.BreakExp(pos) =>
                     (* #NOTE: need to check if in loop first. then return type bottom *)
                     if !loopDepth <= 0
@@ -424,10 +427,10 @@ struct
 
                     case Env.findMatchType(venv,func) of
 
-                        SOME(Env.FunEntry{formals, result}) =>
+                        SOME(Env.FunEntry{formals, result, level=newLevel, label}) =>
                             let fun checkArgs ([], []) = ()
                                 | checkArgs((fTy :: flist), (a :: alist)) = 
-                                    let val {ty=argTy, ...} = trexp a
+                                    let val {ty=argTy, ...} = trexp (a, level)
                                     in
                                         checkAssignable(fTy, argTy, pos, tenv);
                                         checkArgs(flist, alist)
@@ -440,19 +443,20 @@ struct
 
                         | _ => (Err.error pos "error: not a function"; {exp = (), ty = T.BOTTOM})
             in
-            trexp exp
+            trexp (exp, level)
             end
             
-    and transVar(venv, tenv, var) : expty =
-        let fun trvar(var: A.var) : expty =
+    and transVar(venv, tenv, var, level: Translate.level) : expty =
+        let fun trvar(var: A.var, level: Translate.level) : expty =
             case var of
 
                 A.SimpleVar(sym, pos) =>
                     (case Env.findMatchType(venv, sym) of
 
-                        SOME (Env.VarEntry {typeVal, readonly}) =>
+                        SOME (Env.VarEntry {typeVal, readonly, access}) =>
                             {exp = (), ty = typeVal}
-
+                        
+                        (* #TODO: make sure that env changes are here *)
                         (* #NOTE: enventry can also have function stuff and we don't rlly want that *)
                         | SOME (Env.FunEntry funEntry) =>
                             (Err.error pos "error: found a function"; {exp = (), ty = T.BOTTOM})
@@ -462,7 +466,7 @@ struct
                 (* #NOTE: need to check main variable type, go thru fields and check types?  *)
                 | A.FieldVar (var, sym, pos) => 
                     let
-                        val {ty=baseType, ... } = trvar var
+                        val {ty=baseType, ... } = trvar(var, level)
                         val reducedBaseType = reduceToActualType(tenv, baseType)
                         
                         fun checkMatchField [] = NONE
@@ -484,8 +488,8 @@ struct
 
                 | A.SubscriptVar (var, exp, pos) => 
                     let 
-                        val {ty=indexType, ...} = transExp (venv, tenv, exp)
-                        val {ty=arrType, ...} = trvar var
+                        val {ty=indexType, ...} = transExp (venv, tenv, exp, level)
+                        val {ty=arrType, ...} = trvar(var, level)
                     in
                         if indexType = T.BOTTOM orelse arrType = T.BOTTOM then {exp=(), ty=T.BOTTOM}
                         else if not(checkInt(indexType,pos)) then {exp=(), ty=T.BOTTOM}
@@ -495,7 +499,7 @@ struct
                                 | _ => (Err.error pos "error: not an array"; {exp=(), ty=T.BOTTOM})
                     end
             in
-            trvar var
+            trvar (var, level)
             end
 
 
@@ -504,21 +508,24 @@ struct
     (* #NOTE: so like there's two way to do this, depending on recursive or nonrecursive. 
         since we need non-recursive, i'm just gonna do that right now to avoid having to rewrite? *)
 
-    and transDec(venv, tenv, decs) = 
+    and transDec(venv, tenv, decs, level: Translate.level) = 
         let fun
             
             (* #NOTE: we need like 2 cases here. 1) when there is an explicit type annotation (stored in typ) *)
-            trdec(venv, tenv, A.VarDec({name, escape, typ, init, pos})) =
+            trdec(venv, tenv, A.VarDec({name, escape, typ, init, pos}), level: Translate.level) =
                 let
-                    val {ty=initTypeVal, ...} = transExp(venv, tenv, init)
+                    val {ty=initTypeVal, ...} = transExp(venv, tenv, init, level)
                     val reducedTypeVal = reduceToActualType(tenv, initTypeVal)
+                    (* #NOTE: setting escape to true by default here. can use the escape param later when it's configured *)
+                    val acc = Tr.allocLocal(level) true
                 in
                     case typ of
                         (* #NOTE: when we have an initial type given in the var dec *)
                         SOME(symbol, pos) =>
+
                             (case Env.findMatchType(tenv, symbol) of
                                 SOME ty => (checkAssignable(reduceToActualType (tenv, ty), initTypeVal, pos, tenv);
-                                           {venv=Env.addVarVal(venv, name, reduceToActualType (tenv, ty)), tenv=tenv})
+                                           {venv=Env.addVarVal(venv, name, reduceToActualType (tenv, ty), acc), tenv=tenv})
                               | NONE => (Err.error pos "type not recognized"; {venv=venv, tenv=tenv})
                             )
 
@@ -528,11 +535,11 @@ struct
                                     (Err.error pos "cannot infer type from nil";
                                         { venv = venv, tenv = tenv })
                                 | _ =>
-                                    { venv = Env.addVarVal(venv, name, initTypeVal), tenv = tenv}
+                                    { venv = Env.addVarVal(venv, name, initTypeVal, acc), tenv = tenv}
                 end
 
             (* #NOTE: 1) wanna add all headers 2) helper func to add the bodies in 3) check for wrong loops 4) make sure no repeats *)
-            | trdec(venv, tenv, A.TypeDec tydeclist) =
+            | trdec(venv, tenv, A.TypeDec tydeclist, level: Translate.level) =
                 let
                     fun enterHeader ({name, ty, pos}, tenv') =
                         Env.addTypeVal(tenv', name, T.NAME(name, ref NONE))
@@ -582,7 +589,7 @@ struct
                 end
 
             (* #NOTE: 1) wanna add all headers 2) helper func to add the bodies in 3) check for wrong loops 4) make sure no repeats *)
-            | trdec(venv, tenv, A.FunctionDec fundeclist) =
+            | trdec(venv, tenv, A.FunctionDec fundeclist, level) =
                 let
                     fun lookupType (sym, pos, what) =
                         case Env.findMatchType(tenv, sym) of
@@ -593,7 +600,7 @@ struct
                         lookupType(retVal, retPos, "Return")
 
                     fun checkParam {name, escape, typ, pos} =
-                        { name = name, ty = lookupType(typ, pos, "Parameter") }
+                        { name = name, ty = lookupType(typ, pos, "Parameter"), escape = escape }
 
                     fun lookupTypeQuiet (sym, pos, what) =
                         case Env.findMatchType(tenv, sym) of
@@ -601,7 +608,7 @@ struct
                         | NONE => T.BOTTOM
                     
                     fun checkParamQuiet {name, escape, typ, pos} =
-                        { name = name, ty = lookupTypeQuiet(typ, pos, "Parameter") }
+                        { name = name, ty = lookupTypeQuiet(typ, pos, "Parameter"), escape = escape }
 
                     fun checkDuplicateParams ({name, pos, ...} : Absyn.field, seen) =
                     let val n = S.name name
@@ -610,39 +617,53 @@ struct
                         then (Err.error pos "duplicate parameter in function declaration"; seen)
                         else n :: seen
                     end
-
+                    
+                    (* #TODO: need to store level and label here for the different function declarations *)
                     fun enterHeader ({name, params, body, pos, result}, venvAcc) =
                         let
-                            val formals = map #ty (map checkParam params)
+                            val checkedParams = map checkParam params
+                            val formals = map #ty checkedParams
+                            val escapes = map #escape checkedParams
                             val resTy =
                                 case result of
                                     SOME (retVal, retPos) => checkReturnType(retVal, retPos)
                                     | NONE => T.UNIT
+
+                            val funLabel = Temp.newLabel()
+                            val formalEscapes = true :: map (fn {escape, ...} => !escape) checkedParams
+                            val funLevel = Tr.newLevel {parent=level, name=funLabel, formals=formalEscapes}
                         in
                             (* #NOTE: can add helper func but kinda lazy lol *)
-                            S.enter(venvAcc, name, Env.FunEntry{formals=formals, result=resTy})
+                            S.enter(venvAcc, name, Env.FunEntry{formals=formals, result=resTy, level=funLevel, label=funLabel})
                         end
 
                     val venvNew = foldl enterHeader venv fundeclist
 
                     fun checkFun ({name, params, body, pos, result}) =
                         let
-                        val (formals, resTy) =
+                        val (formals, resTy, funLevel) =
                             case Env.findMatchType(venvNew, name) of
-                                SOME (Env.FunEntry {formals, result}) => (formals, result)
-                                | _ =>(Err.error pos ("internal error: missing function header: " ^ S.name name);([], T.BOTTOM))
+                                SOME (Env.FunEntry {formals, result, level, label}) => (formals, result, level)
+                                | _ =>(Err.error pos ("internal error: missing function header: " ^ S.name name);([], T.BOTTOM, level))
 
                         val _ = foldl checkDuplicateParams [] params
                         val paramsNew = map checkParamQuiet params
-                        fun enterParam ({name, ty}, venvAcc) = Env.addVarVal(venvAcc, name, ty)
-                        val venvWithParams = foldl enterParam venvNew paramsNew
+                        fun enterParam (({name, escape, ty}, access), venvAcc) = Env.addVarVal(venvAcc, name, ty, access)
+
+                        val formalAccesses =
+                            case Tr.formals funLevel of
+                                _ :: rest => rest
+                                | [] => []
+
+                        val paramAccessPairs = ListPair.zip(paramsNew, formalAccesses)
+                        val venvWithParams = foldl enterParam venvNew paramAccessPairs
 
                         (* #NOTE: can save prev loop depth if in while/for *)
                         val savedLoopDepth = !loopDepth
 
                         (* #NOTE: we need this bc a func can be in a for or while, and break should not be allowed in the func i think *)
                         val _ = loopDepth := 0
-                        val {ty=bodyTy, ...} = transExp(venvWithParams, tenv, body)
+                        val {ty=bodyTy, exp=bodyExp} = transExp(venvWithParams, tenv, body, funLevel)
                         val _ = loopDepth := savedLoopDepth
                         in
                             checkAssignable(resTy, bodyTy, pos, tenv)
@@ -659,7 +680,7 @@ struct
                     { venv = venvNew, tenv = tenv }
                 end
 
-            and folddec(dec, {venv, tenv}) = trdec(venv, tenv, dec)
+            and folddec(dec, {venv, tenv}) = trdec(venv, tenv, dec, level)
         in
             foldl folddec {venv=venv, tenv=tenv} decs
         end
@@ -707,8 +728,9 @@ struct
     let
         val tenv = Env.base_tenv
         val venv = Env.base_venv
+        val level = Tr.outermost
     in
-        transExp(venv, tenv, exp)
+        transExp(venv, tenv, exp, level)
     end
 
 end

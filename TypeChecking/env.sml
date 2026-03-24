@@ -26,7 +26,7 @@ fun addToSymbolTable ((sym, value), table) =
 structure Env = 
 struct
     (* #NOTE: j need to differentiate value and function types i think  *)
-    datatype enventry = VarEntry of {ty: T.ty, readOnly: bool}
+    datatype enventry = VarEntry of {typeVal:T.ty, readonly: bool}
                 | FunEntry of {formals: T.ty list, result: T.ty}
 
     (* #NOTE: so like type environments are supposed to map the type name to actual type. 
@@ -60,9 +60,8 @@ struct
 
     fun findMatchType (table, sym) = S.look(table, sym)
 
-    fun addVarVal(table, name, ty) = S.enter(table, name, VarEntry{ty=ty, readOnly=false})
-
-    fun addReadOnlyVar(table, name, ty) = S.enter(table, name, VarEntry{ty=ty, readOnly=true})
+    fun addVarVal(table, name, ty) = S.enter(table, name, VarEntry {typeVal=ty, readonly=false})
+    fun addReadOnlyVarVal(table, name, ty) = S.enter(table, name, VarEntry {typeVal=ty, readonly=true})
 
     fun addTypeVal (table, name, ty) = S.enter(table, name, ty)
 end

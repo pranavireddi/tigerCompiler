@@ -1,0 +1,7 @@
+/* field propagation bottom, SHOULD ONLY HAVE ONE ERROR! */
+let
+  type r = {x:int}
+  var a := 1 + "a"
+in
+  a.x
+end
