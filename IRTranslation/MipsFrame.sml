@@ -54,5 +54,8 @@ struct
             {name = name, formals = formalsAccesses, localOffset = nextLocal}
         end
 
+    
+    val FP = 
+    val exp = 
 end
 
