@@ -1,11 +1,23 @@
-(* #NOTE: we build this off the abstraction in frame.sml. This allows us to have MIPS specific frame details! *)
-
+(* #NOTE: so like translate takes our type-checked AST and makes frags which represent our IR trees (mipsFrame is used here to determine where things are stored)
+ We then do like unEx or UnNx to convert the IR trees to like the Tree.exp. This Tree.Exp then can be converted to assembly. 
+ahhhh soooo many complex connections lol. *)
 structure MipsFrame: FRAME = 
 struct 
+
+    structure Tr = Tree
+
     val wordSize = 4
     val k = 4
     datatype access = InFrame of int | InReg of Temp.temp
     type frame = {name: Temp.label, formals: access list, localOffset: int ref}
+
+    (* #NOTE: procFrag is for procedures and stringFrag for string into data sections *)
+    datatype frag = ProcFrag of {body: Tr.stm, frame: frame} 
+              | StringFrag of {label: Temp.label, str: string}
+
+    val FP = Temp.newtemp()
+    val RV = Temp.newtemp()
+    fun procEntryExit1 (frame, body) = body
 
     fun name ({name, ...} : frame) = name
 
@@ -53,6 +65,14 @@ struct
         in
             {name = name, formals = formalsAccesses, localOffset = nextLocal}
         end
+
+    (* #NOTE: this is to access variables given frame pointer and access val. *)
+    fun exp (accessVal, fp) = 
+        case accessVal of
+            InFrame offset => Tr.MEM(Tr.BINOP(Tr.PLUS, fp, Tr.CONST offset))
+          | InReg temp => Tr.TEMP(temp)
+
+    fun externalCall (func, args) = Tr.CALL(Tr.NAME(Temp.namedLabel func), args)
 
 end
 

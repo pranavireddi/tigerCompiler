@@ -1,3 +1,4 @@
+(* #NOTE: exp is for expressions that produce a value. stm is for statements -> side effects and control flow. *)
 signature TREE = 
 sig 
   type label = Temp.label
@@ -33,7 +34,7 @@ struct
   type label=Temp.label
   type size = int
 
-datatype stm = SEQ of stm * stm
+  datatype stm = SEQ of stm * stm
              | LABEL of label
              | JUMP of exp * label list
              | CJUMP of relop * exp * exp * label * label
@@ -53,6 +54,28 @@ datatype stm = SEQ of stm * stm
 
       and relop = EQ | NE | LT | GT | LE | GE 
 	        | ULT | ULE | UGT | UGE
+
+    fun notRel EQ  = NE
+    | notRel NE  = EQ
+    | notRel LT  = GE
+    | notRel GE  = LT
+    | notRel GT  = LE
+    | notRel LE  = GT
+    | notRel ULT = UGE
+    | notRel UGE = ULT
+    | notRel ULE = UGT
+    | notRel UGT = ULE
+
+  fun commute EQ  = EQ
+    | commute NE  = NE
+    | commute LT  = GT
+    | commute GT  = LT
+    | commute LE  = GE
+    | commute GE  = LE
+    | commute ULT = UGT
+    | commute UGT = ULT
+    | commute ULE = UGE
+    | commute UGE = ULE
 
 end
 
