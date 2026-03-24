@@ -1,11 +1,11 @@
 (* #NOTE: so like translate takes our type-checked AST and makes frags which represent our IR trees (mipsFrame is used here to determine where things are stored)
  We then do like unEx or UnNx to convert the IR trees to like the Tree.exp. This Tree.Exp then can be converted to assembly. 
 ahhhh soooo many complex connections lol. *)
-
-structure Tr = Tree
-
 structure MipsFrame: FRAME = 
 struct 
+
+    structure Tr = Tree
+
     val wordSize = 4
     val k = 4
     datatype access = InFrame of int | InReg of Temp.temp

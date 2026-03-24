@@ -1,5 +1,4 @@
 (* #NOTE: creating a frame abstraction so that we can use this across different machine types. *)
-structure Tr = Tree
 
 signature FRAME = 
 
@@ -12,14 +11,16 @@ sig type frame
   val formals: frame -> access list
   val allocLocal: frame -> bool -> access
 
+  val wordSize: int
+
   val FP: Temp.temp
   val RV: Temp.temp
-  val procEntryExit1 : (frame * Tr.stm) -> Tr.stm
+  val procEntryExit1 : (frame * Tree.stm) -> Tree.stm
 
-  val exp: (access * Tr.exp) -> Tr.exp
-  datatype frag = ProcFrag of {body: Tr.stm, frame: frame} 
+  val exp: (access * Tree.exp) -> Tree.exp
+  datatype frag = ProcFrag of {body: Tree.stm, frame: frame} 
                | StringFrag of {label: Temp.label, str: string}
 
-  val externalCall: string * Tr.exp list -> Tr.exp
+  val externalCall: string * Tree.exp list -> Tree.exp
 
 end

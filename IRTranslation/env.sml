@@ -1,20 +1,17 @@
-structure T = Types
-structure A = Absyn
-structure S = Symbol
-
-(* #TODO: need to update VarEntry and FunEntry *)
-
-
-(* #NOTE: tryna make this functional, easy to fold w tuples of symbols and correct mappings? *)
-fun addToSymbolTable ((sym, value), table) = 
-    Symbol.enter(table, S.symbol sym, value)
-
-
 structure Env = 
 struct
+
+    structure T = Types
+    structure A = Absyn
+    structure S = Symbol
+
     (* #NOTE: j need to differentiate value and function types i think  *)
     datatype enventry = VarEntry of {typeVal:T.ty, readonly: bool, access: Translate.access}
                 | FunEntry of {formals: T.ty list, result: T.ty, level: Translate.level, label: Temp.label}
+
+    (* #NOTE: tryna make this functional, easy to fold w tuples of symbols and correct mappings? *)
+    fun addToSymbolTable ((sym, value), table) = 
+        Symbol.enter(table, S.symbol sym, value)
 
     (* #NOTE: so like type environments are supposed to map the type name to actual type. 
     base_tenv should have predefined types (int and string from appendix) *)

@@ -18,6 +18,10 @@ MipsFrame.sml
 frame.sml
 temp.sml
 findescape.sml
+printEscape.sml
+tree.sml
+printTranslate.sml
+printtree.sml
 $/smlnj-lib.cm
 $/ml-yacc-lib.cm
 $/basis.cm

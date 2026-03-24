@@ -1,19 +1,14 @@
 (* #NOTE: so this should manage local variables and static links for nested functions. as a reminder, static links have
 pointer to parent stack frame *)
-
-structure Fr = MipsFrame
-structure Tr = Tree
-structure T = Temp
-structure A = Absyn
-
 signature TRANSLATE =
 sig
+
     type level
     type access  (* NOT the same as frame.access*)
     type exp
 
     val outermost : level
-    val newLevel : {parent: level, name: T.label, formals: bool list} -> level
+    val newLevel : {parent: level, name: Temp.label, formals: bool list} -> level
 
     val formals : level -> access list
     val allocLocal : level -> bool -> access
@@ -33,21 +28,28 @@ sig
     val seqExp : exp list -> exp
 
     val ifExp : exp * exp * exp option -> exp
-    val whileExp : exp * exp * T.label -> exp
-    val forExp : exp * exp * exp * exp * T.label -> exp    
-    val breakExp : T.label -> exp
+    val whileExp : exp * exp * Temp.label -> exp
+    val forExp : exp * exp * exp * exp * Temp.label -> exp    
+    val breakExp : Temp.label -> exp
 
-    val callExp: T.label * level * level * exp list -> exp
+    val callExp: Temp.label * level * level * exp list -> exp
 
-    val binOpExp : Tr.binop * exp * exp -> exp
-    val relOpExp : Tr.relop * exp * exp -> exp
+    val binOpExp : Tree.binop * exp * exp -> exp
+    val relOpExp : Tree.relop * exp * exp -> exp
 
     val procEntryExit : {level: level, body: exp} -> unit
-    val getResult : unit -> Fr.frag list
+    val resetFrags: unit -> unit
+    val getResult : unit -> MipsFrame.frag list
 end
 
 structure Translate : TRANSLATE =
 struct
+
+    structure Fr = MipsFrame
+    structure Tr = Tree
+    structure T = Temp
+    structure A = Absyn
+
     datatype level =
         OUTERMOST
       | LEVEL of {parent: level, frame: MipsFrame.frame, unique: unit ref}
@@ -72,7 +74,7 @@ struct
     fun newLevel {parent, name, formals} =
         let
             val newFormals = true :: formals
-            val frame = MipsFrame.newFrame {name = name, formals = newFormals}
+            val frame = Fr.newFrame {name = name, formals = newFormals}
         in
             LEVEL {parent = parent, frame = frame, unique = ref ()}
         end
@@ -197,10 +199,10 @@ struct
     (* #NOTE: needs to go in data section as literal. secodn type for frag entry. *)
     fun stringExp s =
         let
-            val label = T.newLabel()
-            val _ = frags := Fr.STRING(label, s) :: !frags
+            val labelVal = T.newLabel()
+            val _ = frags := Fr.StringFrag{label = labelVal, str = s} :: !frags
         in
-            Ex(Tr.NAME label)
+            Ex(Tr.NAME labelVal)
         end
 
     (* #NOTE: arrayExp and recordExp need to call external funcs *)
@@ -222,7 +224,7 @@ struct
             Ex(
                 Tr.ESEQ(
                     seq (
-                        Tr.MOVE(Tr.TEMP r, Fr.externalCall("initRecord", [Tr.CONST allocSize]))
+                        Tr.MOVE(Tr.TEMP r, Fr.externalCall("allocRecord", [Tr.CONST allocSize]))
                         :: storeFields(0, fields)
                     ),
                     Tr.TEMP r
@@ -301,13 +303,12 @@ struct
             ])
         end
 
-    fun forExp (varExp : exp, loExp : exp, hiExp : exp, bodyExp : exp, doneLabel : T.label) : exp =
+    fun forExp (varExp : exp, loExp : exp, hiExp : exp, bodyExp : exp, doneLabel : Temp.label) : exp =
         let
-            val limitTemp = T.newtemp()
-
-            val startLabel = T.newLabel()
-            val bodyLabel = T.newLabel()
-            val testLabel = T.newLabel()
+            val limitTemp = Temp.newtemp ()
+            val testLabel = Temp.newLabel ()
+            val bodyLabel = Temp.newLabel ()
+            val incrLabel = Temp.newLabel ()
 
             val varVal = unEx varExp
             val loVal = unEx loExp
@@ -316,24 +317,16 @@ struct
         in
             Nx (
                 seq [
-                    Tr.MOVE(varVal, loVal),
-                    Tr.MOVE(Tr.TEMP limitTemp, hiVal),
-
-                    Tr.CJUMP(Tr.LE, varVal, Tr.TEMP limitTemp, startLabel, doneLabel),
-
-                    Tr.LABEL startLabel,
+                    Tree.MOVE (varVal, loVal),
+                    Tree.MOVE (Tree.TEMP limitTemp, hiVal),
+                    Tree.CJUMP (Tree.LE, varVal, Tree.TEMP limitTemp, bodyLabel, doneLabel),
+                    Tree.LABEL bodyLabel,
                     bodyStm,
-
-                    Tr.LABEL testLabel,
-
-                    Tr.CJUMP(Tr.LT, varVal, Tr.TEMP limitTemp, bodyLabel, doneLabel),
-
-                    Tr.LABEL bodyLabel,
-                    Tr.MOVE(varVal, Tr.BINOP(Tr.PLUS, varVal, Tr.CONST 1)),
-                    bodyStm,
-                    Tr.JUMP(Tr.NAME testLabel, [testLabel]),
-
-                    Tr.LABEL doneLabel
+                    Tree.CJUMP (Tree.LT, varVal, Tree.TEMP limitTemp, incrLabel, doneLabel),
+                    Tree.LABEL incrLabel,
+                    Tree.MOVE (varVal, Tree.BINOP (Tree.PLUS, varVal, Tree.CONST 1)),
+                    Tree.JUMP (Tree.NAME bodyLabel, [bodyLabel]),
+                    Tree.LABEL doneLabel
                 ]
             )
         end
@@ -355,6 +348,7 @@ struct
             Ex(Tr.CALL(Tr.NAME funLabel, staticLink :: argExps))
         end
 
+    fun resetFrags () = frags := []
 
     fun procEntryExit {level, body} =
         let
@@ -363,7 +357,7 @@ struct
                 Tr.MOVE(Tr.TEMP Fr.RV, unEx body)
             val procBody = Fr.procEntryExit1(frame, bodyVal)
         in
-            frags := Fr.PROC {body = procBody, frame = frame} :: !frags
+            frags := Fr.ProcFrag {body = procBody, frame = frame} :: !frags
         end
 
     fun getResult () = List.rev (!frags)
