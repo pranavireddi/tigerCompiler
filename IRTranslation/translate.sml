@@ -190,7 +190,7 @@ struct
             (* for nil pointer checks *)
             val oklabel = T.newLabel()
             val errlabel = T.newLabel()
-            val r = T.newTemp()
+            val r = T.newtemp()
         in
             Ex(Tr.ESEQ(
                 seq[
@@ -211,7 +211,7 @@ struct
             (* for nil pointer checks *)
             val oklabel = T.newLabel()
             val errlabel = T.newLabel()
-            val r = T.newTemp()
+            val r = T.newtemp()
         in
             Ex(Tr.ESEQ(
                 seq[
