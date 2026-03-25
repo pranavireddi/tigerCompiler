@@ -3,5 +3,5 @@ let
     
     var p1 := person {name = "zxy", age = 21}
 in
-    print(p1.name)
+    ()
 end
