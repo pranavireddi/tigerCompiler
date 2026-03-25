@@ -7,7 +7,14 @@ struct
             val absyn = Parse.parse filename
             val _ = FindEscape.findEscape absyn
             val _ = PrintEscape.printEscapes absyn
-            val _ = Semant.transProg absyn
+            val frags = Semant.transProg absyn
+            val _ = app (fn frag =>
+                case frag of
+                    MipsFrame.ProcFrag {body, frame} =>
+                        (print ("PROC: " ^ Symbol.name (MipsFrame.name frame) ^ "\n");
+                        Printtree.printtree (TextIO.stdOut, body))
+                    | _ => ()
+            ) frags
         in
             ()
         end) handle ErrorMsg.Error =>
