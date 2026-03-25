@@ -37,6 +37,8 @@ sig
     val binOpExp : Tree.binop * exp * exp -> exp
     val relOpExp : Tree.relop * exp * exp -> exp
 
+    val stringEq : Tree.relop * exp * exp -> exp
+
     val procEntryExit : {level: level, body: exp} -> unit
     val resetFrags: unit -> unit
     val getResult : unit -> MipsFrame.frag list
@@ -272,7 +274,16 @@ struct
     fun relOpExp (oper : Tr.relop, left : exp, right : exp) : exp = Cx(fn (t, f) => Tr.CJUMP(oper, unEx left, unEx right, t, f))
 
     (* #TODO: do we need separate string comparison stuff? *)
-
+    fun stringEq (oper: Tr.relop, left : exp, right : exp) : exp = 
+        let
+            val call = Ex(Fr.externalCall("stringEqual", [unEx left, unEx right]))
+        in
+            case oper of 
+                Tr.EQ => call
+              | Tr.NE => Ex(Tr.BINOP(Tr.MINUS, Tr.CONST 1, unEx call)) (* call returns 0 for ne and 1 for eq, need to flip it for ne *)
+              | _ => call
+        end
+    
     fun assignExp (left : exp, right : exp) : exp = Nx(Tr.MOVE(unEx left, unEx right))
 
     (* #NOTE: evaluating and converting a list of exps *)

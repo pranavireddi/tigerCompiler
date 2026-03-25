@@ -209,13 +209,19 @@ struct
                                 (* #TODO: need to maybe add in handling for string comparisons here and also make sure translate module supports this *)
                                 | A.EqOp =>
                                         if checkEqual(tenv, lt, rt, pos) then
-                                            {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
+                                            if lt = T.STRING then 
+                                                {exp=Tr.stringEq(translateRelOp oper, leftExp, rightExp), ty=T.INT}
+                                            else
+                                                {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
                                         else
                                             {exp=Tr.nilExp(), ty=T.BOTTOM}
 
                                 | A.NeqOp =>
                                         if checkEqual(tenv, lt, rt, pos) then
-                                            {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
+                                            if lt = T.STRING then 
+                                                {exp=Tr.stringEq(translateRelOp oper, leftExp, rightExp), ty=T.INT}
+                                            else
+                                                {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
                                         else
                                             {exp=Tr.nilExp(), ty=T.BOTTOM}
 
