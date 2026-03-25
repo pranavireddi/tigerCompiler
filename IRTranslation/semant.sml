@@ -152,7 +152,7 @@ struct
     (* 
     transVar: venv * tenv * A.var -> expty
     transExp: venv * tenv * A.exp -> expty
-    transDec: venv * tenv * A.dec -> {venv: venv, tenv: tenv}
+    transDec: venv * tenv * A.dec -> {venv: venv, tenv: tenv, exp: Translate.exp}
     transTy: tenv * A.ty -> T.ty 
 
     type expty = {exp: Translate.exp, ty: Types.ty}
@@ -209,13 +209,19 @@ struct
                                 (* #TODO: need to maybe add in handling for string comparisons here and also make sure translate module supports this *)
                                 | A.EqOp =>
                                         if checkEqual(tenv, lt, rt, pos) then
-                                            {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
+                                            if lt = T.STRING then 
+                                                {exp=Tr.stringEq(translateRelOp oper, leftExp, rightExp), ty=T.INT}
+                                            else
+                                                {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
                                         else
                                             {exp=Tr.nilExp(), ty=T.BOTTOM}
 
                                 | A.NeqOp =>
                                         if checkEqual(tenv, lt, rt, pos) then
-                                            {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
+                                            if lt = T.STRING then 
+                                                {exp=Tr.stringEq(translateRelOp oper, leftExp, rightExp), ty=T.INT}
+                                            else
+                                                {exp=Tr.relOpExp(translateRelOp oper, leftExp, rightExp), ty=T.INT}
                                         else
                                             {exp=Tr.nilExp(), ty=T.BOTTOM}
 
@@ -441,9 +447,10 @@ struct
 
                 | A.LetExp{decs, body, pos} => 
                     let 
-                        val {venv=venv_new, tenv=tenv_new} = transDec(venv, tenv, decs, level, breakLabel)
+                        val {venv=venv_new, tenv=tenv_new, exp=decs_exp} = transDec(venv, tenv, decs, level, breakLabel)
+                        val {exp=body_exp, ty=body_ty} = transExp(venv_new, tenv_new, body, level, breakLabel)
                     in 
-                        transExp(venv_new, tenv_new, body, level, breakLabel)
+                        {exp=Tr.seqExp([decs_exp, body_exp]), ty=body_ty}
                     end
 
 
@@ -555,10 +562,11 @@ struct
             (* #NOTE: we need like 2 cases here. 1) when there is an explicit type annotation (stored in typ) *)
             trdec(venv, tenv, A.VarDec({name, escape, typ, init, pos}), level: Translate.level) =
                 let
-                    val {ty=initTypeVal, ...} = transExp(venv, tenv, init, level, break)
+                    val {exp=initIR, ty=initTypeVal, ...} = transExp(venv, tenv, init, level, break)
                     val reducedTypeVal = reduceToActualType(tenv, initTypeVal)
                     (* #NOTE: setting escape to true by default here. can use the escape param later when it's configured *)
                     val acc = Tr.allocLocal level (!escape)
+                    val lhs = Tr.simpleVar(acc, level)
                 in
                     case typ of
                         (* #NOTE: when we have an initial type given in the var dec *)
@@ -566,17 +574,17 @@ struct
 
                             (case Env.findMatchType(tenv, symbol) of
                                 SOME ty => (checkAssignable(reduceToActualType (tenv, ty), initTypeVal, pos, tenv);
-                                           {venv=Env.addVarVal(venv, name, reduceToActualType (tenv, ty), acc), tenv=tenv})
-                              | NONE => (Err.error pos "type not recognized"; {venv=venv, tenv=tenv})
+                                           {venv=Env.addVarVal(venv, name, reduceToActualType (tenv, ty), acc), tenv=tenv, exp=Tr.assignExp(lhs, initIR)})
+                              | NONE => (Err.error pos "type not recognized"; {venv=venv, tenv=tenv, exp=Tr.nilExp()})
                             )
 
                       (* #NOTE: case where there's no like initial specified type *)
                       | NONE => case reducedTypeVal of
                                 T.NIL =>
                                     (Err.error pos "cannot infer type from nil";
-                                        { venv = venv, tenv = tenv })
+                                        { venv = venv, tenv = tenv, exp=Tr.nilExp() })
                                 | _ =>
-                                    { venv = Env.addVarVal(venv, name, initTypeVal, acc), tenv = tenv}
+                                    { venv = Env.addVarVal(venv, name, initTypeVal, acc), tenv = tenv, exp=Tr.assignExp(lhs, initIR)}
                 end
 
             (* #NOTE: 1) wanna add all headers 2) helper func to add the bodies in 3) check for wrong loops 4) make sure no repeats *)
@@ -626,7 +634,7 @@ struct
 
                     val _ = List.app (fn f => checkIllegalCycle(f, ())) tydeclist
                 in
-                { venv = venv, tenv = temp_tenv }
+                { venv = venv, tenv = temp_tenv, exp=Tr.nilExp() } (* typedec is a no-op in terms of the IR tree *)
                 end
 
             (* #NOTE: 1) wanna add all headers 2) helper func to add the bodies in 3) check for wrong loops 4) make sure no repeats *)
@@ -720,12 +728,21 @@ struct
                     val _ = foldl checkDuplicates [] fundeclist
                     val _ = List.app (fn f => (checkFun f; ())) fundeclist
                 in
-                    { venv = venvNew, tenv = tenv }
+                    { venv = venvNew, tenv = tenv, exp=Tr.nilExp() }
                 end
 
-            and folddec(dec, {venv, tenv}) = trdec(venv, tenv, dec, level)
+            and folddec(dec, {venv, tenv, explst}) = 
+                let 
+                    val {venv=v', tenv=t', exp=e'} = trdec(venv, tenv, dec, level)
+                in 
+                    {venv=v', tenv=t', explst=e' :: explst}
+                end 
         in
-            foldl folddec {venv=venv, tenv=tenv} decs
+            let 
+                val {venv=finalv, tenv=finalt, explst=finalel} = foldl folddec {venv=venv, tenv=tenv, explst=[]} decs
+            in 
+                { venv=finalv, tenv=finalt, exp=Tr.seqExp(rev finalel)}
+            end
         end
 
     (* #NOTE: return conversion from ast type info to like our internal type stuff from the type dec above *)
@@ -773,7 +790,7 @@ struct
     let
         val tenv = Env.base_tenv
         val venv = Env.base_venv
-        val mainLabel = Temp.newLabel ()
+        val mainLabel = Temp.namedLabel "main"
         val mainLevel = Tr.newLevel {parent = Tr.outermost, name = mainLabel, formals = []}
         val _ = Tr.resetFrags()
         val {exp = programExp, ty = programTy} = transExp (venv, tenv, exp, mainLevel, NONE)
