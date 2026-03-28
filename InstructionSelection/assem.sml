@@ -1,3 +1,5 @@
+(* INDEPENDENT of the target asm language *)
+
 structure Assem = struct
 
   type reg = string
@@ -5,14 +7,18 @@ structure Assem = struct
   type label = Temp.label
 
   datatype instr = OPER of {assem: string,
-			    dst: temp list,
-			    src: temp list,
-			    jump: label list option}
+							dst: temp list,
+							src: temp list,
+							jump: label list option}
                  | LABEL of {assem: string, lab: Temp.label}
                  | MOVE of {assem: string, 
-			    dst: temp,
-			    src: temp}
+							dst: temp,
+							src: temp}
 
+(*
+format(m, i) formats an assembly instruction as a string
+m is a function that shows the reg assignment/name of every temp
+*)
   fun format saytemp =
     let 
 	fun speak(assem,dst,src,jump) =
