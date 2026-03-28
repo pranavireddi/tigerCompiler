@@ -6,6 +6,11 @@ struct
 
     structure Tr = Tree
 
+    val specialregs = 
+    val argregs = 
+    val calleesaves = 
+    val callersaves = 
+
     val wordSize = 4
     val k = 4
     datatype access = InFrame of int | InReg of Temp.temp

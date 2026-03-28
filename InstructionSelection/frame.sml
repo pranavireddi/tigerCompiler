@@ -23,4 +23,6 @@ sig type frame
 
   val externalCall: string * Tree.exp list -> Tree.exp
 
+  type register = string
+  val tempMap: register Temp.Table.table
 end
