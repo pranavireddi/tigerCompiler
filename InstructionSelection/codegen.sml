@@ -11,24 +11,28 @@ struct
     structure T = Tree
     structure A = Assem
 
-    val codegen (frame : F) (tree : T) : A.instr list = 
+    val codegen (frame) (stm: T.stm) : A.instr list = 
         let
-            val instrList = ref ([] : A.instr list)
-            fun emit (i : A.instr) = instrList = i :: instrList 
+            val ilist = ref (nil : A.instr list)
+            fun emit x = ilist := x :: !ilist
+
+            fun result(gen) = 
+                let 
+                    val t = Temp.newtemp()
+                in 
+                    gen t; 
+                    t
+                end 
 
             fun munchStm = 
 
             and munchExp (T.CONST i) = 
-                    let 
-                        val r = Temp.newtemp()
-                    in 
-                        emit (A.OPER{
+                    result(fn t => emit (A.OPER{
                                 assem="li `d0 " ^ Int.toString i ^ "\n",
-                                dst=[r],
+                                dst=[t],
                                 src=[],
                                 jump=NONE
-                            })
-                    end 
+                            }))
               | munchExp (T.BINOP(T.PLUS, e1, e2)) = 
         in 
         end
