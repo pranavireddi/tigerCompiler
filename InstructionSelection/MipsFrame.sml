@@ -7,6 +7,8 @@ struct
     structure Tr = Tree
     structure A = Assem
 
+    type register = string
+
     val ZERO = Temp.newtemp()
     val AT   = Temp.newtemp() (* assembler temporary *)
     val V0   = Temp.newtemp()

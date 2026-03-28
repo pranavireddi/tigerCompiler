@@ -1,6 +1,7 @@
 structure MipsGen : CODEGEN =
 struct
-    structure F = MipsFrame
+    structure Frame = MipsFrame
+    structure F = Frame
     structure T = Tree
     structure A = Assem
 
@@ -92,7 +93,7 @@ struct
                                 src=[munchExp e],
                                 dst=[i],jump=NONE})
                 | munchStm(T.LABEL lab) =
-                    emit(A.LABEL{assem=lab ^ ":\n", lab=lab})
+                    emit(A.LABEL{assem=Symbol.name lab ^ ":\n", lab=lab})
                 | munchStm (T.EXP e) = 
                     (munchExp e; ())
                 | munchStm _ = ErrorMsg.impossible "Could not munch statement"
@@ -104,7 +105,7 @@ struct
                                 src=[],
                                 jump=NONE
                             }))
-              | munchExp (T.BINOP(T.PLUS, e1, e2)) = 
+              | munchExp _ = ErrorMsg.impossible "Could not munch expression"
             (* moves args to correct positions (outgoing param registers or mem *)
             (* returns list of temps passed to machine's call insn, list as srcs *)
             and munchArgs (i, []) = []

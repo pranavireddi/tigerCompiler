@@ -32,4 +32,9 @@ sig type frame
 
   type register = string
   val tempMap: register Temp.Table.table
+
+  val specialregs : Temp.temp list
+  val argregs : Temp.temp list
+  val calleesaves : Temp.temp list
+  val callersaves : Temp.temp list
 end

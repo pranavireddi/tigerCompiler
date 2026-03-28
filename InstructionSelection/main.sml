@@ -7,19 +7,19 @@ structure Main = struct
  fun getsome (SOME x) = x
 
    fun emitproc out (F.ProcFrag{body,frame}) =
-        let val _ = print ("emit " ^ F.name frame ^ "\n")
-(*         val _ = Printtree.printtree(out,body); *)
+        let val _ = print ("emit " ^ Symbol.name(F.name frame) ^ "\n")
+            val _ = Printtree.printtree(out,body)
 	        val stms = Canon.linearize body
-(*         val _ = app (fn s => Printtree.printtree(out,s)) stms; *)
+            val _ = app (fn s => Printtree.printtree(out,s)) stms
             val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
 	        val instrs =   List.concat(map (MipsGen.codegen frame) stms') 
-            fun tempToString t =
-                case Temp.Table.look(F.tempMap, t) of
+            (* val tempToString = fn t =>
+                (case Temp.Table.look(F.tempMap, t) of
                     SOME name => name
-                    | NONE => Temp.makestring t
-            val format0 = Assem.format(tempToString)
+                    | NONE => Temp.makestring t) *)
+            val format0 = Assem.format Temp.makestring
         in
-            app (fn i => TextIO.output(out,format0 i)) instrs;
+            app (fn i => TextIO.output(out,format0 i)) instrs
         end
     | emitproc out (F.StringFrag{label=lab,str=s}) = TextIO.output(out,F.string(lab,s))
 
@@ -28,14 +28,25 @@ structure Main = struct
         in (f out before TextIO.closeOut out) 
 	    handle e => (TextIO.closeOut out; raise e)
        end 
-
+(* 
    fun compile filename = 
        let val absyn = Parse.parse filename
            val frags = (FindEscape.prog absyn; Semant.transProg absyn)
         in 
             withOpenFile (filename ^ ".s") 
 	     (fn out => (app (emitproc out) frags))
-       end
+       end *)
+
+    fun main filename =
+        (let val absyn = Parse.parse filename
+             val _ = FindEscape.findEscape absyn
+             (* val _ = PrintEscape.printEscapes absyn *)
+             val frags = Semant.transProg absyn
+         in
+             withOpenFile (filename ^ ".s")
+                 (fn out => app (emitproc out) frags)
+         end)
+         handle ErrorMsg.Error => print "Broken compilation \n"
 
 end
 
