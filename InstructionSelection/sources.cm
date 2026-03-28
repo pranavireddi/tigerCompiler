@@ -12,6 +12,7 @@ frame.sml
 graph.sig
 graph.sml
 main.sml
+mipsgen.sml
 MipsFrame.sml
 parse.sml
 prabsyn.sml

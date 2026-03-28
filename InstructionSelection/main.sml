@@ -1,23 +1,27 @@
 structure Main = struct
 
    structure Tr = Translate
-   structure F = Frame
-   structure R = RegAlloc
+   structure F = MipsFrame
+   (* structure R = RegAlloc *)
 
  fun getsome (SOME x) = x
 
-   fun emitproc out (F.PROC{body,frame}) =
-     let val _ = print ("emit " ^ Frame.name frame ^ "\n")
+   fun emitproc out (F.ProcFrag{body,frame}) =
+        let val _ = print ("emit " ^ F.name frame ^ "\n")
 (*         val _ = Printtree.printtree(out,body); *)
-	 val stms = Canon.linearize body
+	        val stms = Canon.linearize body
 (*         val _ = app (fn s => Printtree.printtree(out,s)) stms; *)
-         val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
-	 val instrs =   List.concat(map (Mips.codegen frame) stms') 
-         val format0 = Assem.format(Temp.makestring)
-      in  app (fn i => TextIO.output(out,format0 i)) instrs;
-     end
-     end
-    | emitproc out (F.STRING(lab,s)) = TextIO.output(out,F.string(lab,s))
+            val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
+	        val instrs =   List.concat(map (MipsGen.codegen frame) stms') 
+            fun tempToString t =
+                case Temp.Table.look(F.tempMap, t) of
+                    SOME name => name
+                    | NONE => Temp.makestring t
+            val format0 = Assem.format(tempToString)
+        in
+            app (fn i => TextIO.output(out,format0 i)) instrs;
+        end
+    | emitproc out (F.StringFrag{label=lab,str=s}) = TextIO.output(out,F.string(lab,s))
 
    fun withOpenFile fname f = 
        let val out = TextIO.openOut fname

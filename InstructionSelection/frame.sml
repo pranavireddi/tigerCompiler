@@ -15,7 +15,14 @@ sig type frame
 
   val FP: Temp.temp
   val RV: Temp.temp
+  val SP: Temp.temp
+  val RA: Temp.temp
+
   val procEntryExit1 : (frame * Tree.stm) -> Tree.stm
+  val procEntryExit2 : frame * Assem.instr list -> Assem.instr list
+  val procEntryExit3 : frame * Assem.instr list -> {prolog: string, body: Assem.instr list, epilog: string}
+  
+  val string : Temp.label * string -> string
 
   val exp: (access * Tree.exp) -> Tree.exp
   datatype frag = ProcFrag of {body: Tree.stm, frame: frame} 

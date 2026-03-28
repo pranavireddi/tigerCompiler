@@ -5,11 +5,59 @@ structure MipsFrame: FRAME =
 struct 
 
     structure Tr = Tree
+    structure A = Assem
 
-    val specialregs = 
-    val argregs = 
-    val calleesaves = 
-    val callersaves = 
+    val ZERO = Temp.newtemp()
+    val AT   = Temp.newtemp() (* assembler temporary *)
+    val V0   = Temp.newtemp()
+    val V1   = Temp.newtemp()
+    val a0 = Temp.newtemp()
+    val a1 = Temp.newtemp()
+    val a2 = Temp.newtemp()
+    val a3 = Temp.newtemp()
+    val t0 = Temp.newtemp()
+    val t1 = Temp.newtemp()
+    val t2 = Temp.newtemp()
+    val t3 = Temp.newtemp()
+    val t4 = Temp.newtemp()
+    val t5 = Temp.newtemp()
+    val t6 = Temp.newtemp()
+    val t7 = Temp.newtemp()
+    val t8 = Temp.newtemp()
+    val t9 = Temp.newtemp()
+    val s0 = Temp.newtemp()
+    val s1 = Temp.newtemp()
+    val s2 = Temp.newtemp()
+    val s3 = Temp.newtemp()
+    val s4 = Temp.newtemp()
+    val s5 = Temp.newtemp()
+    val s6 = Temp.newtemp()
+    val s7 = Temp.newtemp()
+    val k0 = Temp.newtemp()
+    val k1 = Temp.newtemp()
+    val GP = Temp.newtemp()
+    val SP = Temp.newtemp()
+    val FP = Temp.newtemp()
+    val RA = Temp.newtemp()
+    val RV = V0
+
+    val specialregs  = [ZERO, AT, V0, V1, GP, SP, FP, RA, k0, k1]
+    val argregs      = [a0, a1, a2, a3]
+    val calleesaves  = [s0, s1, s2, s3, s4, s5, s6, s7]
+    val callersaves  = [t0, t1, t2, t3, t4, t5, t6, t7, t8, t9]
+
+    val tempMap =
+        foldl (fn ((temp, name), table) => Temp.Table.enter(table, temp, name))
+            Temp.Table.empty
+            [(ZERO, "$zero"), (AT, "$at"),   (V0, "$v0"),  (V1, "$v1"),
+            (a0,   "$a0"),   (a1, "$a1"),   (a2, "$a2"),  (a3, "$a3"),
+            (t0,   "$t0"),   (t1, "$t1"),   (t2, "$t2"),  (t3, "$t3"),
+            (t4,   "$t4"),   (t5, "$t5"),   (t6, "$t6"),  (t7, "$t7"),
+            (t8,   "$t8"),   (t9, "$t9"),
+            (s0,   "$s0"),   (s1, "$s1"),   (s2, "$s2"),  (s3, "$s3"),
+            (s4,   "$s4"),   (s5, "$s5"),   (s6, "$s6"),  (s7, "$s7"),
+            (k0,   "$k0"),   (k1, "$k1"),
+            (GP,   "$gp"),   (SP, "$sp"),   (FP, "$fp"),  (RA, "$ra")]
 
     val wordSize = 4
     val k = 4
@@ -20,13 +68,23 @@ struct
     datatype frag = ProcFrag of {body: Tr.stm, frame: frame} 
               | StringFrag of {label: Temp.label, str: string}
 
-    val FP = Temp.newtemp()
-    val RV = Temp.newtemp()
     fun procEntryExit1 (frame, body) = body
+
+    fun procEntryExit2 (frame, body) =
+        body @ [A.OPER{assem="",
+                        src=specialregs@calleesaves,
+                        dst=[], jump=SOME[]}]
+
+    fun procEntryExit3 ({name,formals,localOffset},body) =
+        {prolog = "PROCEDURE " ^ Symbol.name name ^ "\n",
+        body = body,
+        epilog = "END " ^ Symbol.name name ^ "\n"}
 
     fun name ({name, ...} : frame) = name
 
     fun formals({formals, ...} : frame) = formals
+
+    fun string (label, s) = Symbol.name label ^ ": .asciiz \"" ^ s ^ "\"\n"
 
     (* #NOTE: use this when allocating local variables in function and looks at the escape flag to determine where things go. *)
     fun allocLocal(frame: frame) escape =
