@@ -3,7 +3,7 @@ Group is
 absyn.sml
 assem.sml
 canon.sml
-codegen.sml
+codegen.sig
 env.sml
 errormsg.sml
 findescape.sml
