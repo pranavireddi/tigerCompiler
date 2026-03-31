@@ -1,0 +1,7 @@
+let
+    var s1 := "apple"
+    var s2 := "apple"
+in
+    if s1 = s2 then print("Equal\n") else print("Not Equal\n");
+    if s1 <> s2 then print("Not Equal\n") else print("Equal\n")
+end
