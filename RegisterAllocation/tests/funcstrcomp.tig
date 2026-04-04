@@ -1,0 +1,6 @@
+let
+    function compare(s1: string, s2: string): int =
+        if s1 = s2 then 1 else 0
+in
+    compare("a", "a")
+end

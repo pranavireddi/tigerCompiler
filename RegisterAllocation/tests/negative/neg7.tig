@@ -1,0 +1,8 @@
+let
+  type a = {x:int}
+  type b = {x:int}
+  var r1 := a{x=1}
+  var r2 := b{x=1}
+in
+  r1 = r2
+end
