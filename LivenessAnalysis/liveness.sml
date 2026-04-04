@@ -17,7 +17,7 @@ sig
 end
 =
 struct
-    (* #NOTE: we need two things here. 1) compute livness at every node in the flowGraph. 2) construct interference graph based on livness *)
+    (* #NOTE: we need two things here. 1) compute liveness at every node in the flowGraph. 2) construct interference graph based on liveness *)
     structure G = Graph
     structure T = Temp
     structure F = Flow

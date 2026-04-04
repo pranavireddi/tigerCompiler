@@ -28,15 +28,7 @@ structure Main = struct
         in (f out before TextIO.closeOut out) 
 	    handle e => (TextIO.closeOut out; raise e)
        end 
-(* 
-   fun compile filename = 
-       let val absyn = Parse.parse filename
-           val frags = (FindEscape.prog absyn; Semant.transProg absyn)
-        in 
-            withOpenFile (filename ^ ".s") 
-	     (fn out => (app (emitproc out) frags))
-       end *)
-
+       
     fun main filename =
         (let val absyn = Parse.parse filename
              val _ = FindEscape.findEscape absyn
