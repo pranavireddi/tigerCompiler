@@ -1,12 +1,12 @@
-L12:
-L8:
-li t139, 0
-move t138, t139
-L10:
-move t102, t138
-j L11
-L9:
-li t140, 0
-move t138, t140
-j L10
-L11:
+L2087:
+L2083:
+li $s0, 0
+move $s0, $s0
+L2085:
+move $v0, $s0
+j L2086
+L2084:
+li $s0, 0
+move $s0, $s0
+j L2085
+L2086:

@@ -117,7 +117,7 @@ struct
                     ismove = !ismoveVals }
         in
             (* #NOTE: prints the entire graph we constructed. can comment out if this becomes annoying lol. *)
-            PrintGraph.printGraph finalFlowGraph;
+            (* PrintGraph.printGraph finalFlowGraph; *)
             (finalFlowGraph, nodes)
         end
 
