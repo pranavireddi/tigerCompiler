@@ -37,4 +37,5 @@ sig type frame
   val argregs : Temp.temp list
   val calleesaves : Temp.temp list
   val callersaves : Temp.temp list
+  val registers : register list
 end

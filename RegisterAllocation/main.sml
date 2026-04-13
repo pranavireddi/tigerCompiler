@@ -2,7 +2,7 @@ structure Main = struct
 
    structure Tr = Translate
    structure F = MipsFrame
-   (* structure R = RegAlloc *)
+   structure R = RegAlloc
 
  fun getsome (SOME x) = x
 
@@ -13,14 +13,15 @@ structure Main = struct
             (* val _ = app (fn s => Printtree.printtree(out,s)) stms *)
             val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
 	        val instrs =   List.concat(map (MipsGen.codegen frame) stms') 
-            val (flowgraph, nodes) = MakeGraph.instrs2graph instrs
-            val (igraph, liveOut) = Liveness.interferenceGraph flowgraph
-            val _ = Liveness.show(TextIO.stdOut, igraph)
-            (* val tempToString = fn t =>
-                (case Temp.Table.look(F.tempMap, t) of
+            (* val (flowgraph, nodes) = MakeGraph.instrs2graph instrs *)
+            (* val _ = Liveness.interferenceGraph flowgraph *)
+            (* val _ = Liveness.show(TextIO.stdOut, igraph) *)
+            val (instrs, allocation) = RegAlloc.alloc(instrs, frame)
+            val tempToString = fn t =>
+                (case Temp.Table.look(allocation, t) of
                     SOME name => name
-                    | NONE => Temp.makestring t) *)
-            val format0 = Assem.format Temp.makestring
+                    | NONE => Temp.makestring t)
+            val format0 = Assem.format tempToString
         in
             app (fn i => TextIO.output(out,format0 i)) instrs
         end

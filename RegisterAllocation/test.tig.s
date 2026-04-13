@@ -1,23 +1,23 @@
-L47:
-lw t170, -4(t130)
-lw t169, -4(t170)
-lw t168, -8(t169)
-move t102, t168
-j L46
-L46:
-L49:
-move t104, t130
-jal L45
-move t171, t102
-move t102, t171
-j L48
-L48:
-L51:
-li t172, 5
-sw t172, -8(t130)
-move t104, t130
-jal L44
-move t173, t102
-move t102, t173
-j L50
-L50:
+L3:
+lw $s0, -4($fp)
+lw $s0, -4($s0)
+lw $s0, -8($s0)
+move $v0, $s0
+j L2
+L2:
+L5:
+move $a0, $fp
+jal L1
+move $s0, $v0
+move $v0, $s0
+j L4
+L4:
+L7:
+li $s0, 5
+sw $s0, -8($fp)
+move $a0, $fp
+jal L0
+move $s0, $v0
+move $v0, $s0
+j L6
+L6:

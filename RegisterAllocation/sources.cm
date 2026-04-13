@@ -4,6 +4,7 @@ absyn.sml
 assem.sml
 canon.sml
 codegen.sig
+color.sml
 env.sml
 errormsg.sml
 findescape.sml
@@ -22,6 +23,7 @@ printEscape.sml
 printGraph.sml
 printTranslate.sml
 printtree.sml
+regAlloc.sml
 semant.sml
 symbol.sml
 table.sig

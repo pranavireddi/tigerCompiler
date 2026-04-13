@@ -1,3 +1,7 @@
+(* graph: interference graph *)
+(* tnode: mapping from temps of the Assem program to graph nodes *)
+(* gtemp: inverse mapping, graph nodes to temps *)
+(* moves: list of move insns *)
 structure Liveness :
 sig
     datatype igraph =
