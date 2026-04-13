@@ -41,18 +41,43 @@ struct
                 not (isPrecolored n) andalso
                 not (List.exists (fn a => G.eq(n,a)) (!stack))
 
-            fun getDegree n =
-                length (List.filter isInGraph (G.adj n))
-
-            fun remove n =
-                stack := n :: !stack
-
             fun simplify () = 
-                case List.find (fn n => isInGraph n andalso getDegree n < K) (G.nodes graph) of
-                    SOME n => (remove n; simplify ())
+                case List.find (fn n => isInGraph n andalso length (List.filter isInGraph (G.adj n)) < K) (G.nodes graph) of
+                    SOME n => (stack := n :: !stack; simplify ())
                     | NONE => ()
 
-           fun select [] = ()
+            (* fun coalesce () =
+                let fun briggs (u, v) =
+                        let val uAdj = G.adj u
+                            val vAdj = G.adj vs
+                            val combined = List.filter (fn n => not(G.eq(n,u)) andalso not (G.eq(n,v))) (uAdj @ vAdj)
+                        in
+                            length combined < K
+                        end
+
+                    fun george (u, v) = false
+
+                    fun canCoalesce (u, v) =
+                        not (isPrecolored u) andalso
+                        not (isPrecolored v) andalso
+                        not (G.eq(u,v)) andalso
+                        not (List.exists (fn n => G.eq(n, u)) (G.adj v)) andalso
+                        (briggs (u,v) orelse george (u,v))
+
+                    fun doCoalesce (u, v) =
+
+
+                    fun tryCoalesce [] = ()
+                        | tryCoalesce ((u,v)::l) = 
+                            if canCoalesce (u,v) then doCoalesce (u,v)
+                            else tryCoalesce l
+                in
+                    tryCoalesce moves
+                    simplify ();
+                    coalesce ();
+                end *)
+                
+            fun select [] = ()
                 | select (n::nodes) =
                     let val used = List.foldl (fn (m,l) => 
                             case Temp.Table.look(!colorMap, gtemp m) of
@@ -67,10 +92,9 @@ struct
                             | NONE => spills := gtemp n :: !spills;
                         select nodes
                     end
-
-
         in
             simplify();
+            (* coalesce(); *)
             select(!stack);
             (!colorMap, !spills)
         end
