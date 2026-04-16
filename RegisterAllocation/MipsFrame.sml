@@ -73,7 +73,31 @@ struct
     datatype frag = ProcFrag of {body: Tr.stm, frame: frame} 
               | StringFrag of {label: Temp.label, str: string}
 
-    fun procEntryExit1 (frame, body) = body
+    (* fun procEntryExit1 (frame, body) = body *)
+    fun procEntryExit1 ({name, formals, localOffset}: frame, body) =
+        let
+            val argRegs = [a0, a1, a2, a3]
+
+            fun moveFormals ([], _) = []
+            | moveFormals (_, []) = []
+            | moveFormals (InFrame offset :: rest, reg :: regs) =
+                    Tr.MOVE(
+                        Tr.MEM(Tr.BINOP(Tr.PLUS, Tr.TEMP FP, Tr.CONST offset)),
+                        Tr.TEMP reg
+                    ) :: moveFormals(rest, regs)
+            | moveFormals (InReg t :: rest, reg :: regs) =
+                    Tr.MOVE(Tr.TEMP t, Tr.TEMP reg) :: moveFormals(rest, regs)
+
+            val moves = moveFormals(formals, argRegs)
+
+            fun seq [] = Tr.EXP(Tr.CONST 0)
+            | seq [s] = s
+            | seq (s :: rest) = Tr.SEQ(s, seq rest)
+        in
+            case moves of
+                [] => body
+            | _  => Tr.SEQ(seq moves, body)
+        end
 
     fun procEntryExit2 (frame, body) =
         body @ [A.OPER{assem="",
@@ -86,7 +110,7 @@ struct
         epilog = "END " ^ Symbol.name name ^ "\n"} *)
     fun procEntryExit3 ({name, formals, localOffset}, body) =
         let
-            val frameSize = ~ (!localOffset)  (* localOffset is negative, so negate it *)
+            val frameSize = ~ (!localOffset)
             val prologInstrs = [
                 A.OPER{assem="sw $ra, -4($sp)\n",  src=[RA,SP], dst=[], jump=NONE},
                 A.OPER{assem="sw $fp, -8($sp)\n",  src=[FP,SP], dst=[], jump=NONE},
