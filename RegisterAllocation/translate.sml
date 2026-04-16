@@ -67,6 +67,7 @@ struct
 
     (* #NOTE: we add to this when doing semant.transProg *)
     val frags: Fr.frag list ref = ref []
+    val stringTable: (string * T.label) list ref = ref []
 
     fun frameOf (LEVEL {frame, ...}) = frame
       | frameOf OUTERMOST =
@@ -233,8 +234,21 @@ struct
     (* #NOTE: needs to go in data section as literal. secodn type for frag entry. *)
     fun stringExp s =
         let
-            val labelVal = T.newLabel()
-            val _ = frags := Fr.StringFrag{label = labelVal, str = s} :: !frags
+            fun findLabel [] = NONE
+              | findLabel ((s', lab) :: rest) =
+                    if s = s' then SOME lab else findLabel rest
+
+            val labelVal =
+                case findLabel (!stringTable) of
+                    SOME lab => lab
+                  | NONE =>
+                        let
+                            val lab = T.newLabel()
+                            val _ = stringTable := (s, lab) :: !stringTable
+                            val _ = frags := Fr.StringFrag{label = lab, str = s} :: !frags
+                        in
+                            lab
+                        end
         in
             Ex(Tr.NAME labelVal)
         end
@@ -391,7 +405,9 @@ struct
             Ex(Tr.CALL(Tr.NAME funLabel, staticLink :: argExps))
         end
 
-    fun resetFrags () = frags := []
+    fun resetFrags () =
+        (frags := [];
+         stringTable := [])
 
     fun procEntryExit {level, body} =
         let
