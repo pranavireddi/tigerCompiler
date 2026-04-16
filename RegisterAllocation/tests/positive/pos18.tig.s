@@ -1,10 +1,36 @@
-L2165:
+.data
+
+.text
+.globl main
+main:
+addi $sp, $sp, -16
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L2824:
+sw $a0, -4($fp)
+sw $a1, -8($fp)
 li $s0, 0
 move $v0, $s0
-j L2164
-L2164:
-L2167:
+j L2823
+L2823:
+move $sp, $fp
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 16
+jr $ra
+addi $sp, $sp, -12
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L2826:
+sw $a0, -4($fp)
 li $s0, 0
 move $v0, $s0
-j L2166
-L2166:
+j L2825
+L2825:
+move $sp, $fp
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 12
+jr $ra

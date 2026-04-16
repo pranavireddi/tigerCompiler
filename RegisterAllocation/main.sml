@@ -5,6 +5,7 @@ structure Main = struct
    structure R = RegAlloc
 
  fun getsome (SOME x) = x
+        | getsome NONE = raise Fail "getsome: expected SOME"
 
 fun emitProc out (F.ProcFrag{body,frame}) =
         let val stms = Canon.linearize body

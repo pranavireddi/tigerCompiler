@@ -1,142 +1,178 @@
-L2050:
+.data
+L2700: .asciiz "fail"
+
+.text
+.globl main
+main:
+addi $sp, $sp, -16
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L2708:
+sw $a0, -4($fp)
+sw $a1, -8($fp)
 li $s0, 0
 move $v0, $s0
-j L2049
-L2049:
-L2041: .asciiz "fail"
-L2042: .asciiz "fail"
-L2052:
+j L2707
+L2707:
+move $sp, $fp
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 16
+jr $ra
+addi $sp, $sp, -16
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L2710:
+sw $a0, -4($fp)
+sw $a1, -8($fp)
 li $s0, 0
 move $v0, $s0
-j L2051
-L2051:
-L2054:
+j L2709
+L2709:
+move $sp, $fp
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 16
+jr $ra
+addi $sp, $sp, -12
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L2712:
+sw $a0, -4($fp)
 li $s0, 0
 move $s0, $s0
-L2010:
-L2011:
+L2669:
+L2670:
 li $s1, 10
-bgt $s0, $s1, L2008
-j L2009
-L2009:
+bgt $s0, $s1, L2667
+j L2668
+L2668:
 addi $s0, $s0, 1
 move $s0, $s0
-j L2010
-L2008:
-L2007:
+j L2669
+L2667:
+L2666:
 li $s1, 0
 move $s1, $s1
 li $s2, 10
 move $s2, $s2
-ble $s1, $s2, L2016
-j L2012
-L2012:
+ble $s1, $s2, L2675
+j L2671
+L2671:
 li $s1, 0
 move $s1, $s1
 li $s2, 10
 move $s2, $s2
-ble $s1, $s2, L2021
-j L2018
-L2018:
-L2032:
-L2033:
+ble $s1, $s2, L2680
+j L2677
+L2677:
+L2691:
+L2692:
 li $s1, 0
 move $s1, $s1
 li $s2, 10
 move $s2, $s2
-ble $s1, $s2, L2028
-j L2024
-L2024:
+ble $s1, $s2, L2687
+j L2683
+L2683:
 li $s1, 100
-bgt $s0, $s1, L2030
-j L2031
-L2031:
-j L2032
-L2016:
+bgt $s0, $s1, L2689
+j L2690
+L2690:
+j L2691
+L2675:
 li $s3, 5
-beq $s1, $s3, L2013
-j L2014
-L2014:
-bge $s1, $s2, L2012
-j L2017
-L2017:
+beq $s1, $s3, L2672
+j L2673
+L2673:
+bge $s1, $s2, L2671
+j L2676
+L2676:
 addi $s1, $s1, 1
 move $s1, $s1
-j L2016
-L2013:
-j L2012
-L2021:
+j L2675
+L2672:
+j L2671
+L2680:
 move $a0, $fp
-jal L2019
+jal L2678
 move $s3, $v0
-bge $s1, $s2, L2018
-j L2022
-L2022:
+bge $s1, $s2, L2677
+j L2681
+L2681:
 addi $s1, $s1, 1
 move $s1, $s1
-j L2021
-L2028:
+j L2680
+L2687:
 li $s3, 5
-beq $s1, $s3, L2025
-j L2026
-L2026:
+beq $s1, $s3, L2684
+j L2685
+L2685:
 addi $s0, $s0, 1
 move $s0, $s0
-bge $s1, $s2, L2024
-j L2029
-L2029:
+bge $s1, $s2, L2683
+j L2688
+L2688:
 addi $s1, $s1, 1
 move $s1, $s1
-j L2028
-L2025:
-j L2024
-L2030:
-L2023:
+j L2687
+L2684:
+j L2683
+L2689:
+L2682:
 li $s1, 0
 move $s1, $s1
 li $s2, 10
 move $s2, $s2
-ble $s1, $s2, L2038
-j L2034
-L2034:
-L2043:
-L2044:
-L2040:
-L2047:
-L2048:
+ble $s1, $s2, L2697
+j L2693
+L2693:
+L2701:
+L2702:
+L2699:
+L2705:
+L2706:
 move $a0, $fp
-jal L2046
+jal L2704
 move $s0, $v0
-j L2047
-L2038:
+j L2705
+L2697:
 li $s3, 0
 move $s3, $s3
 li $s4, 0
-beq $s3, $s4, L2035
-j L2036
-L2036:
-bge $s1, $s2, L2034
-j L2039
-L2039:
+beq $s3, $s4, L2694
+j L2695
+L2695:
+bge $s1, $s2, L2693
+j L2698
+L2698:
 addi $s1, $s1, 1
 move $s1, $s1
-j L2038
-L2035:
+j L2697
+L2694:
 addi $s0, $s0, 1
 move $s0, $s0
-j L2034
-L2055:
+j L2693
+L2713:
 li $s0, 5
 move $s0, $s0
 li $s0, 0
 move $a0, $s0
-la $s0, L2041
+la $s0, L2700
 move $a1, $s0
 jal print
 move $s0, $v0
-j L2043
-L2045:
+j L2701
+L2703:
 li $s0, 0
 move $v0, $s0
-j L2053
-L2053:
+j L2711
+L2711:
+move $sp, $fp
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 12
+jr $ra

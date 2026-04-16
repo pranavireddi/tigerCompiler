@@ -110,19 +110,19 @@ struct
         epilog = "END " ^ Symbol.name name ^ "\n"} *)
     fun procEntryExit3 ({name, formals, localOffset}, body) =
         let
-            val frameSize = ~ (!localOffset)
+            val frameSize = ~ (!localOffset) + 8
             val prologInstrs = [
-                A.OPER{assem="sw $ra, -4($sp)\n",  src=[RA,SP], dst=[], jump=NONE},
-                A.OPER{assem="sw $fp, -8($sp)\n",  src=[FP,SP], dst=[], jump=NONE},
-                A.OPER{assem="move $fp, $sp\n",    src=[SP],    dst=[FP], jump=NONE},
-                A.OPER{assem="addi $sp, $sp, -" ^ Int.toString (frameSize + 8) ^ "\n",
-                            src=[SP], dst=[SP], jump=NONE}
+                A.OPER{assem="addi $sp, $sp, -" ^ Int.toString frameSize ^ "\n", src=[SP], dst=[SP], jump=NONE},
+                A.OPER{assem="sw $ra, 0($sp)\n", src=[RA,SP], dst=[], jump=NONE},
+                A.OPER{assem="sw $fp, 4($sp)\n", src=[FP,SP], dst=[], jump=NONE},
+                A.OPER{assem="move $fp, $sp\n", src=[SP], dst=[FP], jump=NONE}
             ]
             val epilogInstrs = [
-                A.OPER{assem="move $sp, $fp\n",    src=[FP],    dst=[SP], jump=NONE},
-                A.OPER{assem="lw $ra, -4($sp)\n",  src=[SP],    dst=[RA], jump=NONE},
-                A.OPER{assem="lw $fp, -8($sp)\n",  src=[SP],    dst=[FP], jump=NONE},
-                A.OPER{assem="jr $ra\n",           src=[RA],    dst=[],   jump=SOME[]}
+                A.OPER{assem="move $sp, $fp\n", src=[FP], dst=[SP], jump=NONE},
+                A.OPER{assem="lw $ra, 0($sp)\n", src=[SP], dst=[RA], jump=NONE},
+                A.OPER{assem="lw $fp, 4($sp)\n", src=[SP], dst=[FP], jump=NONE},
+                A.OPER{assem="addi $sp, $sp, " ^ Int.toString frameSize ^ "\n", src=[SP], dst=[SP], jump=NONE},
+                A.OPER{assem="jr $ra\n", src=[RA], dst=[], jump=SOME[]}
             ]
         in
             prologInstrs @ body @ epilogInstrs

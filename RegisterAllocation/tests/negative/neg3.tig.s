@@ -1,27 +1,53 @@
-L1814:
+.data
+
+.text
+.globl main
+main:
+addi $sp, $sp, -16
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L2479:
+sw $a0, -4($fp)
+sw $a1, -8($fp)
 li $s0, 0
 move $v0, $s0
-j L1813
-L1813:
-L1816:
+j L2478
+L2478:
+move $sp, $fp
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 16
+jr $ra
+addi $sp, $sp, -12
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L2481:
+sw $a0, -4($fp)
 li $s0, 0
 move $s0, $s0
 li $s1, 10
 move $s1, $s1
-ble $s0, $s1, L1811
-j L1808
-L1808:
+ble $s0, $s1, L2476
+j L2473
+L2473:
 li $s0, 0
 move $v0, $s0
-j L1815
-L1811:
+j L2480
+L2476:
 move $a0, $fp
-jal L1809
+jal L2474
 move $s2, $v0
-bge $s0, $s1, L1808
-j L1812
-L1812:
+bge $s0, $s1, L2473
+j L2477
+L2477:
 addi $s0, $s0, 1
 move $s0, $s0
-j L1811
-L1815:
+j L2476
+L2480:
+move $sp, $fp
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 12
+jr $ra
