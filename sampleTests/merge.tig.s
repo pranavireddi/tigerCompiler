@@ -1,15 +1,19 @@
 .data
-L288: .asciiz "0"
-L289: .asciiz "9"
-L295: .asciiz " "
-L296: .asciiz "
+L478: .asciiz "0"
+L479: .asciiz "9"
+L485: .asciiz " "
+L486: .asciiz "
 "
-L345: .asciiz "-"
+L535: .asciiz "-"
 
 .text
 .globl main
 main:
-L364:
+sw $ra, -4($sp)
+sw $fp, -8($sp)
+move $fp, $sp
+addi $sp, $sp, -16
+L554:
 li $s0, 0
 move $a0, $s0
 lw $s0, -4($fp)
@@ -22,20 +26,20 @@ move $s0, $s0
 move $s0, $s0
 li $s1, 0
 move $a0, $s1
-la $s1, L288
+la $s1, L478
 move $a1, $s1
 jal ord
 move $s1, $v0
 move $s1, $s1
-bge $s0, $s1, L290
-j L291
-L291:
+bge $s0, $s1, L480
+j L481
+L481:
 li $s0, 0
 move $s0, $s0
-L292:
+L482:
 move $v0, $s0
-j L363
-L290:
+j L553
+L480:
 li $s0, 1
 move $s0, $s0
 li $s1, 0
@@ -50,56 +54,64 @@ move $s1, $s1
 move $s1, $s1
 li $s2, 0
 move $a0, $s2
-la $s2, L289
+la $s2, L479
 move $a1, $s2
 jal ord
 move $s2, $v0
 move $s2, $s2
-ble $s1, $s2, L293
-j L294
-L294:
+ble $s1, $s2, L483
+j L484
+L484:
 li $s0, 0
 move $s0, $s0
-L293:
+L483:
 move $s0, $s0
-j L292
-L363:
-L301:
+j L482
+L553:
+move $sp, $fp
+lw $ra, -4($sp)
+lw $fp, -8($sp)
+jr $ra
+sw $ra, -4($sp)
+sw $fp, -8($sp)
+move $fp, $sp
+addi $sp, $sp, -16
+L491:
 lw $s0, -4($fp)
 lw $s0, -4($s0)
 lw $s0, -8($s0)
 move $a0, $s0
-la $s0, L295
+la $s0, L485
 move $a1, $s0
 jal stringEqual
 move $s0, $v0
 move $s0, $s0
 li $s1, 0
-bne $s0, $s1, L297
-j L298
-L298:
+bne $s0, $s1, L487
+j L488
+L488:
 lw $s0, -4($fp)
 lw $s0, -4($s0)
 lw $s0, -8($s0)
 move $a0, $s0
-la $s0, L296
+la $s0, L486
 move $a1, $s0
 jal stringEqual
 move $s0, $v0
 move $s0, $s0
-L299:
+L489:
 li $s1, 0
-bne $s0, $s1, L302
-j L300
-L300:
+bne $s0, $s1, L492
+j L490
+L490:
 li $s0, 0
 move $v0, $s0
-j L365
-L297:
+j L555
+L487:
 li $s0, 1
 move $s0, $s0
-j L299
-L302:
+j L489
+L492:
 lw $s0, -4($fp)
 lw $s0, -4($s0)
 addi $s0, $s0, -8
@@ -110,48 +122,56 @@ jal getchar
 move $s1, $v0
 move $s1, $s1
 sw $s1, 0($s0)
-j L301
-L365:
-L367:
+j L491
+L555:
+move $sp, $fp
+lw $ra, -4($sp)
+lw $fp, -8($sp)
+jr $ra
+sw $ra, -4($sp)
+sw $fp, -8($sp)
+move $fp, $sp
+addi $sp, $sp, -16
+L557:
 li $s0, 0
 move $s0, $s0
 move $a0, $fp
-jal L287
+jal L477
 move $s1, $v0
 move $s1, $s2
 li $s2, 0
-beq $s1, $s2, L304
-j L303
-L303:
+beq $s1, $s2, L494
+j L493
+L493:
 addi $s1, $s1, 0
 move $s1, $s1
 move $a0, $fp
 lw $s2, -4($fp)
 lw $s2, -8($s2)
 move $a1, $s2
-jal L286
+jal L476
 move $s2, $v0
 move $s2, $s2
 sw $s2, 0($s1)
-L306:
+L496:
 move $a0, $fp
 lw $s1, -4($fp)
 lw $s1, -8($s1)
 move $a1, $s1
-jal L286
+jal L476
 move $s1, $v0
 move $s1, $s1
 li $s2, 0
-bne $s1, $s2, L307
-j L305
-L305:
+bne $s1, $s2, L497
+j L495
+L495:
 move $v0, $s0
-j L366
-L304:
+j L556
+L494:
 jal nilerror
 move $s2, $v0
-j L303
-L307:
+j L493
+L497:
 li $s1, 10
 mul $s0, $s0, $s1 
 move $s0, $s0
@@ -167,7 +187,7 @@ add $s0, $s0, $s1
 move $s0, $s0
 li $s1, 0
 move $a0, $s1
-la $s1, L288
+la $s1, L478
 move $a1, $s1
 jal ord
 move $s1, $v0
@@ -183,9 +203,17 @@ jal getchar
 move $s2, $v0
 move $s2, $s2
 sw $s2, 0($s1)
-j L306
-L366:
-L369:
+j L496
+L556:
+move $sp, $fp
+lw $ra, -4($sp)
+lw $fp, -8($sp)
+jr $ra
+sw $ra, -4($sp)
+sw $fp, -8($sp)
+move $fp, $sp
+addi $sp, $sp, -16
+L559:
 li $s0, 4
 move $a0, $s0
 jal allocRecord
@@ -197,29 +225,29 @@ move $s0, $s0
 lw $s1, -4($fp)
 move $a0, $s1
 move $a1, $s0
-jal L285
+jal L475
 move $s1, $v0
 move $s1, $s1
 move $s0, $s0
 li $s2, 0
-beq $s0, $s2, L313
-j L312
-L312:
+beq $s0, $s2, L503
+j L502
+L502:
 lw $s0, 0($s0)
 li $s2, 0
-bne $s0, $s2, L314
-j L315
-L315:
+bne $s0, $s2, L504
+j L505
+L505:
 li $s0, 0
 move $s0, $s0
-L316:
+L506:
 move $v0, $s0
-j L368
-L313:
+j L558
+L503:
 jal nilerror
 move $s2, $v0
-j L312
-L314:
+j L502
+L504:
 li $s0, 8
 move $a0, $s0
 jal allocRecord
@@ -230,38 +258,46 @@ addi $s1, $s0, 4
 move $s1, $s1
 lw $s2, -4($fp)
 move $a0, $s2
-jal L308
+jal L498
 move $s2, $v0
 move $s2, $s2
 sw $s2, 0($s1)
 move $s0, $s0
-j L316
-L368:
-L371:
+j L506
+L558:
+move $sp, $fp
+lw $ra, -4($sp)
+lw $fp, -8($sp)
+jr $ra
+sw $ra, -4($sp)
+sw $fp, -8($sp)
+move $fp, $sp
+addi $sp, $sp, -16
+L561:
 li $s0, 0
-beq $s1, $s0, L339
-j L340
-L340:
+beq $s1, $s0, L529
+j L530
+L530:
 li $s0, 0
-beq $s1, $s0, L336
-j L337
-L337:
+beq $s1, $s0, L526
+j L527
+L527:
 move $s0, $s1
 li $s2, 0
-beq $s0, $s2, L318
-j L317
-L317:
+beq $s0, $s2, L508
+j L507
+L507:
 lw $s0, 0($s0)
 move $s0, $s0
 move $s2, $s1
 li $s3, 0
-beq $s2, $s3, L320
-j L319
-L319:
+beq $s2, $s3, L510
+j L509
+L509:
 lw $s2, 0($s2)
-blt $s0, $s2, L333
-j L334
-L334:
+blt $s0, $s2, L523
+j L524
+L524:
 li $s0, 8
 move $a0, $s0
 jal allocRecord
@@ -271,9 +307,9 @@ addi $s2, $s0, 0
 move $s2, $s2
 move $s3, $s1
 li $s4, 0
-beq $s3, $s4, L328
-j L327
-L327:
+beq $s3, $s4, L518
+j L517
+L517:
 lw $s3, 0($s3)
 sw $s3, 0($s2)
 addi $s2, $s0, 4
@@ -283,40 +319,40 @@ move $s3, $s3
 move $s4, $s1
 move $s1, $s1
 li $s5, 0
-beq $s1, $s5, L330
-j L329
-L329:
+beq $s1, $s5, L520
+j L519
+L519:
 move $a0, $s3
 move $a1, $s4
 lw $s1, 4($s1)
 move $a2, $s1
-jal L309
+jal L499
 move $s1, $v0
 move $s1, $s1
 sw $s1, 0($s2)
 move $s0, $s0
-L335:
+L525:
 move $s0, $s0
-L338:
+L528:
 move $s0, $s0
-L341:
+L531:
 move $v0, $s0
-j L370
-L339:
+j L560
+L529:
 move $s0, $s1
-j L341
-L336:
+j L531
+L526:
 move $s0, $s1
-j L338
-L318:
+j L528
+L508:
 jal nilerror
 move $s2, $v0
-j L317
-L320:
+j L507
+L510:
 jal nilerror
 move $s3, $v0
-j L319
-L333:
+j L509
+L523:
 li $s0, 8
 move $a0, $s0
 jal allocRecord
@@ -326,9 +362,9 @@ addi $s2, $s0, 0
 move $s2, $s2
 move $s3, $s1
 li $s4, 0
-beq $s3, $s4, L322
-j L321
-L321:
+beq $s3, $s4, L512
+j L511
+L511:
 lw $s3, 0($s3)
 sw $s3, 0($s2)
 addi $s2, $s0, 4
@@ -337,52 +373,60 @@ lw $s3, -4($fp)
 move $s3, $s3
 move $s4, $s1
 li $s5, 0
-beq $s4, $s5, L324
-j L323
-L323:
+beq $s4, $s5, L514
+j L513
+L513:
 move $a0, $s3
 lw $s3, 4($s4)
 move $a1, $s3
 move $a2, $s1
-jal L309
+jal L499
 move $s1, $v0
 move $s1, $s1
 sw $s1, 0($s2)
 move $s0, $s0
-j L335
-L322:
+j L525
+L512:
 jal nilerror
 move $s4, $v0
-j L321
-L324:
+j L511
+L514:
 jal nilerror
 move $s5, $v0
-j L323
-L328:
+j L513
+L518:
 jal nilerror
 move $s4, $v0
-j L327
-L330:
+j L517
+L520:
 jal nilerror
 move $s5, $v0
-j L329
-L370:
-L373:
+j L519
+L560:
+move $sp, $fp
+lw $ra, -4($sp)
+lw $fp, -8($sp)
+jr $ra
+sw $ra, -4($sp)
+sw $fp, -8($sp)
+move $fp, $sp
+addi $sp, $sp, -16
+L563:
 li $s0, 0
-bgt $s1, $s0, L343
-j L344
-L344:
+bgt $s1, $s0, L533
+j L534
+L534:
 li $s0, 0
 move $v0, $s0
-j L372
-L343:
+j L562
+L533:
 lw $s0, -4($fp)
 move $a0, $s0
 li $s0, 10
 div $s1, $s0
 mflo $s0
 move $a1, $s0
-jal L342
+jal L532
 move $s0, $v0
 li $s0, 10
 div $s1, $s0
@@ -393,7 +437,7 @@ sub $s0, $s1, $s0
 move $s0, $s0
 li $s1, 0
 move $a0, $s1
-la $s1, L288
+la $s1, L478
 move $a1, $s1
 jal ord
 move $s1, $v0
@@ -410,33 +454,41 @@ move $a0, $s1
 move $a1, $s0
 jal print
 move $s0, $v0
-j L344
-L372:
-L375:
+j L534
+L562:
+move $sp, $fp
+lw $ra, -4($sp)
+lw $fp, -8($sp)
+jr $ra
+sw $ra, -4($sp)
+sw $fp, -8($sp)
+move $fp, $sp
+addi $sp, $sp, -16
+L565:
 li $s0, 0
-blt $s1, $s0, L349
-j L350
-L350:
+blt $s1, $s0, L539
+j L540
+L540:
 li $s0, 0
-bgt $s1, $s0, L346
-j L347
-L347:
+bgt $s1, $s0, L536
+j L537
+L537:
 li $s0, 0
 move $a0, $s0
-la $s0, L288
+la $s0, L478
 move $a1, $s0
 jal print
 move $s0, $v0
 move $s0, $s0
-L348:
+L538:
 move $s0, $s0
-L351:
+L541:
 move $v0, $s0
-j L374
-L349:
+j L564
+L539:
 li $s0, 0
 move $a0, $s0
-la $s0, L345
+la $s0, L535
 move $a1, $s0
 jal print
 move $s0, $v0
@@ -444,38 +496,46 @@ move $a0, $fp
 li $s0, 0
 sub $s0, $s0, $s1 
 move $a1, $s0
-jal L342
+jal L532
 move $s0, $v0
 move $s0, $s0
-j L351
-L346:
+j L541
+L536:
 move $a0, $fp
 move $a1, $s1
-jal L342
+jal L532
 move $s0, $v0
 move $s0, $s0
-j L348
-L374:
-L377:
+j L538
+L564:
+move $sp, $fp
+lw $ra, -4($sp)
+lw $fp, -8($sp)
+jr $ra
+sw $ra, -4($sp)
+sw $fp, -8($sp)
+move $fp, $sp
+addi $sp, $sp, -16
+L567:
 li $s0, 0
-beq $s1, $s0, L360
-j L361
-L361:
+beq $s1, $s0, L550
+j L551
+L551:
 lw $s0, -4($fp)
 move $s0, $s0
 move $s1, $s1
 li $s2, 0
-beq $s1, $s2, L353
-j L352
-L352:
+beq $s1, $s2, L543
+j L542
+L542:
 move $a0, $s0
 lw $s0, 0($s1)
 move $a1, $s0
-jal L310
+jal L500
 move $s0, $v0
 li $s0, 0
 move $a0, $s0
-la $s0, L295
+la $s0, L485
 move $a1, $s0
 jal print
 move $s0, $v0
@@ -483,37 +543,45 @@ lw $s0, -4($fp)
 move $s0, $s0
 move $s1, $s1
 li $s2, 0
-beq $s1, $s2, L357
-j L356
-L356:
+beq $s1, $s2, L547
+j L546
+L546:
 move $a0, $s0
 lw $s0, 4($s1)
 move $a1, $s0
-jal L311
+jal L501
 move $s0, $v0
 move $s0, $s0
-L362:
+L552:
 move $v0, $s0
-j L376
-L360:
+j L566
+L550:
 li $s0, 0
 move $a0, $s0
-la $s0, L296
+la $s0, L486
 move $a1, $s0
 jal print
 move $s0, $v0
 move $s0, $s0
-j L362
-L353:
+j L552
+L543:
 jal nilerror
 move $s2, $v0
-j L352
-L357:
+j L542
+L547:
 jal nilerror
 move $s2, $v0
-j L356
-L376:
-L379:
+j L546
+L566:
+move $sp, $fp
+lw $ra, -4($sp)
+lw $fp, -8($sp)
+jr $ra
+sw $ra, -4($sp)
+sw $fp, -8($sp)
+move $fp, $sp
+addi $sp, $sp, -16
+L569:
 addi $s0, $fp, -8
 move $s0, $s0
 li $s1, 0
@@ -523,7 +591,7 @@ move $s1, $v0
 move $s1, $s1
 sw $s1, 0($s0)
 move $a0, $fp
-jal L308
+jal L498
 move $s0, $v0
 move $s0, $s0
 addi $s1, $fp, -8
@@ -535,20 +603,24 @@ move $s2, $v0
 move $s2, $s2
 sw $s2, 0($s1)
 move $a0, $fp
-jal L308
+jal L498
 move $s1, $v0
 move $s1, $s1
 move $s2, $fp
 move $a0, $fp
 move $a1, $s0
 move $a2, $s1
-jal L309
+jal L499
 move $s0, $v0
 move $s0, $s0
 move $a0, $s2
 move $a1, $s0
-jal L311
+jal L501
 move $s0, $v0
 move $v0, $s0
-j L378
-L378:
+j L568
+L568:
+move $sp, $fp
+lw $ra, -4($sp)
+lw $fp, -8($sp)
+jr $ra
