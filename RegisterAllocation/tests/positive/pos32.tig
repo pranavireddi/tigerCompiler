@@ -1,0 +1,8 @@
+let
+    var x := 0
+    function f():int =
+        (x := x + 1;
+         x)
+in
+    f()
+end

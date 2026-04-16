@@ -1,0 +1,6 @@
+let
+  var x := 5
+  function f(x:int): int = x + 1
+in
+  f(3)
+end
