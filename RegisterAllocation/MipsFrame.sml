@@ -112,6 +112,8 @@ struct
         let
             val frameSize = ~ (!localOffset) + 8
             val prologInstrs = [
+                A.LABEL{assem=".globl " ^ Symbol.name name ^ "\n" ^
+                            Symbol.name name ^ ":\n", lab=name},
                 A.OPER{assem="addi $sp, $sp, -" ^ Int.toString frameSize ^ "\n", src=[SP], dst=[SP], jump=NONE},
                 A.OPER{assem="sw $ra, 0($sp)\n", src=[RA,SP], dst=[], jump=NONE},
                 A.OPER{assem="sw $fp, 4($sp)\n", src=[FP,SP], dst=[], jump=NONE},
@@ -183,7 +185,8 @@ struct
             InFrame offset => Tr.MEM(Tr.BINOP(Tr.PLUS, fp, Tr.CONST offset))
           | InReg temp => Tr.TEMP(temp)
 
-    fun externalCall (func, args) = Tr.CALL(Tr.NAME(Temp.namedLabel func), args)
+    (* fun externalCall (func, args) = Tr.CALL(Tr.NAME(Temp.namedLabel func), args) *)
+    fun externalCall (func, args) = Tr.CALL(Tr.NAME(Temp.namedLabel ("tig_" ^ func)), args)
 
 end
 

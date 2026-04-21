@@ -790,7 +790,7 @@ struct
     let
         val tenv = Env.base_tenv
         val venv = Env.base_venv
-        val mainLabel = Temp.namedLabel "main"
+        val mainLabel = Temp.namedLabel "tig_main"
         val mainLevel = Tr.newLevel {parent = Tr.outermost, name = mainLabel, formals = []}
         val _ = Tr.resetFrags()
         val {exp = programExp, ty = programTy} = transExp (venv, tenv, exp, mainLevel, NONE)

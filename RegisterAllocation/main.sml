@@ -33,7 +33,7 @@ fun emitProc out (F.ProcFrag{body,frame}) =
 
    fun emitDataSection out frags =
         let
-            val _ = TextIO.output(out, ".data\n")
+            val _ = TextIO.output(out, "\n.data\n")
         in
             app (fn frag =>
                     case frag of
@@ -43,7 +43,7 @@ fun emitProc out (F.ProcFrag{body,frame}) =
 
    fun emitTextSection out frags =
         let
-            val _ = TextIO.output(out, "\n.text\n.globl main\nmain:\n")
+                val _ = TextIO.output(out, "\n.text\n")
         in
             app (fn frag =>
                     case frag of
