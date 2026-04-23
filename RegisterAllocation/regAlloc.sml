@@ -20,12 +20,6 @@ struct
                                 spillCost = (fn _ => 1),
                                 registers = Frame.registers}
         in
-            if null spills then
-                (instrs, alloc)
-            else
-                let val instrs' = RewriteProgram(instrs, spills, frame)
-                in
-                    alloc(instrs', frame)
-                end
+            (instrs, alloc)
         end
 end
