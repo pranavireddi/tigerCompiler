@@ -87,9 +87,9 @@ struct
                
                         val avail = List.find (fn reg => not (List.exists (fn m => m = reg) used)) registers
                     in
-                        case avail of
+                        (case avail of
                             SOME color => colorMap := Temp.Table.enter(!colorMap, gtemp n, color)
-                            | NONE => spills := gtemp n :: !spills;
+                            | NONE => spills := gtemp n :: !spills);
                         select nodes
                     end
         in

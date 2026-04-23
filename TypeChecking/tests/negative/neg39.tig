@@ -1,0 +1,9 @@
+let
+  function f(n:int): int =
+    if n = 0 then 0 else g("hi")
+
+  function g(n:int): int =
+    f(n-1)
+in
+  f(5)
+end

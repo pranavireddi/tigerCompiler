@@ -1,19 +1,20 @@
+
 .data
-L483: .asciiz "0"
-L484: .asciiz "9"
-L490: .asciiz " "
-L491: .asciiz "
+L99: .asciiz "0"
+L100: .asciiz "9"
+L106: .asciiz " "
+L107: .asciiz "
 "
-L540: .asciiz "-"
+L156: .asciiz "-"
 
 .text
-.globl tig_main
-L481:
-sw $ra, -4($sp)
-sw $fp, -8($sp)
-move $fp, $sp
+.globl L97
+L97:
 addi $sp, $sp, -16
-L559:
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L175:
 sw $a0, -4($fp)
 sw $a1, -8($fp)
 move $s0, $a2
@@ -23,26 +24,26 @@ lw $s0, -4($fp)
 lw $s0, -4($s0)
 lw $s0, -8($s0)
 move $a1, $s0
-	jal tig_ord
+jal tig_ord
 move $s0, $v0
 move $s0, $s0
 move $s0, $s0
 li $s1, 0
 move $a0, $s1
-la $s1, L483
+la $s1, L99
 move $a1, $s1
-	jal tig_ord
+jal tig_ord
 move $s1, $v0
 move $s1, $s1
-bge $s0, $s1, L485
-j L486
-L486:
+bge $s0, $s1, L101
+j L102
+L102:
 li $s0, 0
 move $s0, $s0
-L487:
+L103:
 move $v0, $s0
-j L558
-L485:
+j L174
+L101:
 li $s0, 1
 move $s0, $s0
 li $s1, 0
@@ -51,138 +52,142 @@ lw $s1, -4($fp)
 lw $s1, -4($s1)
 lw $s1, -8($s1)
 move $a1, $s1
-	jal tig_ord
+jal tig_ord
 move $s1, $v0
 move $s1, $s1
 move $s1, $s1
 li $s2, 0
 move $a0, $s2
-la $s2, L484
+la $s2, L100
 move $a1, $s2
-	jal tig_ord
+jal tig_ord
 move $s2, $v0
 move $s2, $s2
-ble $s1, $s2, L488
-j L489
-L489:
+ble $s1, $s2, L104
+j L105
+L105:
 li $s0, 0
 move $s0, $s0
-L488:
+L104:
 move $s0, $s0
-j L487
-L558:
+j L103
+L174:
 move $sp, $fp
-lw $ra, -4($sp)
-lw $fp, -8($sp)
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 16
 jr $ra
-L482:
-sw $ra, -4($sp)
-sw $fp, -8($sp)
-move $fp, $sp
+.globl L98
+L98:
 addi $sp, $sp, -16
-L561:
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L177:
 sw $a0, -4($fp)
 sw $a1, -8($fp)
-L496:
+L112:
 lw $s0, -4($fp)
 lw $s0, -4($s0)
 lw $s0, -8($s0)
 move $a0, $s0
-la $s0, L490
+la $s0, L106
 move $a1, $s0
-	jal tig_stringEqual
+jal tig_stringEqual
 move $s0, $v0
 move $s0, $s0
 li $s1, 0
-bne $s0, $s1, L492
-j L493
-L493:
+bne $s0, $s1, L108
+j L109
+L109:
 lw $s0, -4($fp)
 lw $s0, -4($s0)
 lw $s0, -8($s0)
 move $a0, $s0
-la $s0, L491
+la $s0, L107
 move $a1, $s0
-	jal tig_stringEqual
+jal tig_stringEqual
 move $s0, $v0
 move $s0, $s0
-L494:
+L110:
 li $s1, 0
-bne $s0, $s1, L497
-j L495
-L495:
+bne $s0, $s1, L113
+j L111
+L111:
 li $s0, 0
 move $v0, $s0
-j L560
-L492:
+j L176
+L108:
 li $s0, 1
 move $s0, $s0
-j L494
-L497:
+j L110
+L113:
 lw $s0, -4($fp)
 lw $s0, -4($s0)
 addi $s0, $s0, -8
 move $s0, $s0
 li $s1, 0
 move $a0, $s1
-	jal tig_getchar
+jal tig_getchar
 move $s1, $v0
 move $s1, $s1
 sw $s1, 0($s0)
-j L496
-L560:
+j L112
+L176:
 move $sp, $fp
-lw $ra, -4($sp)
-lw $fp, -8($sp)
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 16
 jr $ra
-L480:
-sw $ra, -4($sp)
-sw $fp, -8($sp)
-move $fp, $sp
+.globl L96
+L96:
 addi $sp, $sp, -16
-L563:
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L179:
 sw $a0, -4($fp)
 sw $a1, -8($fp)
 move $s0, $a2
 li $s1, 0
 move $s1, $s1
 move $a0, $fp
-jal L482
+jal L98
 move $s2, $v0
 move $s0, $s0
 li $s2, 0
-beq $s0, $s2, L499
-j L498
-L498:
+beq $s0, $s2, L115
+j L114
+L114:
 addi $s0, $s0, 0
 move $s0, $s0
 move $a0, $fp
 lw $s2, -4($fp)
 lw $s2, -8($s2)
 move $a1, $s2
-jal L481
+jal L97
 move $s2, $v0
 move $s2, $s2
 sw $s2, 0($s0)
-L501:
+L117:
 move $a0, $fp
 lw $s0, -4($fp)
 lw $s0, -8($s0)
 move $a1, $s0
-jal L481
+jal L97
 move $s0, $v0
 move $s0, $s0
 li $s2, 0
-bne $s0, $s2, L502
-j L500
-L500:
+bne $s0, $s2, L118
+j L116
+L116:
 move $v0, $s1
-j L562
-L499:
-jal nilerror
+j L178
+L115:
+jal tig_nilerror
 move $s2, $v0
-j L498
-L502:
+j L114
+L118:
 li $s0, 10
 mul $s0, $s1, $s0 
 move $s0, $s0
@@ -191,16 +196,16 @@ move $a0, $s1
 lw $s1, -4($fp)
 lw $s1, -8($s1)
 move $a1, $s1
-	jal tig_ord
+jal tig_ord
 move $s1, $v0
 move $s1, $s1
 add $s0, $s0, $s1 
 move $s0, $s0
 li $s1, 0
 move $a0, $s1
-la $s1, L483
+la $s1, L99
 move $a1, $s1
-	jal tig_ord
+jal tig_ord
 move $s1, $v0
 move $s1, $s1
 sub $s0, $s0, $s1 
@@ -210,27 +215,29 @@ addi $s0, $s0, -8
 move $s0, $s0
 li $s2, 0
 move $a0, $s2
-	jal tig_getchar
+jal tig_getchar
 move $s2, $v0
 move $s2, $s2
 sw $s2, 0($s0)
-j L501
-L562:
+j L117
+L178:
 move $sp, $fp
-lw $ra, -4($sp)
-lw $fp, -8($sp)
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 16
 jr $ra
-L503:
-sw $ra, -4($sp)
-sw $fp, -8($sp)
-move $fp, $sp
+.globl L119
+L119:
 addi $sp, $sp, -16
-L565:
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L181:
 sw $a0, -4($fp)
 sw $a1, -8($fp)
 li $s0, 4
 move $a0, $s0
-	jal tig_allocRecord
+jal tig_allocRecord
 move $s0, $v0
 move $s0, $s0
 li $s1, 0
@@ -239,32 +246,32 @@ move $s0, $s0
 lw $s1, -4($fp)
 move $a0, $s1
 move $a1, $s0
-jal L480
+jal L96
 move $s1, $v0
 move $s1, $s1
 move $s0, $s0
 li $s2, 0
-beq $s0, $s2, L508
-j L507
-L507:
+beq $s0, $s2, L124
+j L123
+L123:
 lw $s0, 0($s0)
 li $s2, 0
-bne $s0, $s2, L509
-j L510
-L510:
+bne $s0, $s2, L125
+j L126
+L126:
 li $s0, 0
 move $s0, $s0
-L511:
+L127:
 move $v0, $s0
-j L564
-L508:
-jal nilerror
+j L180
+L124:
+jal tig_nilerror
 move $s2, $v0
-j L507
-L509:
+j L123
+L125:
 li $s0, 8
 move $a0, $s0
-	jal tig_allocRecord
+jal tig_allocRecord
 move $s0, $v0
 move $s0, $s0
 sw $s1, 0($s0)
@@ -272,63 +279,65 @@ addi $s1, $s0, 4
 move $s1, $s1
 lw $s2, -4($fp)
 move $a0, $s2
-jal L503
+jal L119
 move $s2, $v0
 move $s2, $s2
 sw $s2, 0($s1)
 move $s0, $s0
-j L511
-L564:
+j L127
+L180:
 move $sp, $fp
-lw $ra, -4($sp)
-lw $fp, -8($sp)
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 16
 jr $ra
-L504:
-sw $ra, -4($sp)
-sw $fp, -8($sp)
-move $fp, $sp
+.globl L120
+L120:
 addi $sp, $sp, -16
-L567:
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L183:
 sw $a0, -4($fp)
 sw $a1, -8($fp)
 move $s0, $a2
 move $s1, $a3
 li $s2, 0
-beq $s0, $s2, L534
-j L535
-L535:
+beq $s0, $s2, L150
+j L151
+L151:
 li $s2, 0
-beq $s1, $s2, L531
-j L532
-L532:
+beq $s1, $s2, L147
+j L148
+L148:
 move $s0, $s0
 li $s2, 0
-beq $s0, $s2, L513
-j L512
-L512:
+beq $s0, $s2, L129
+j L128
+L128:
 lw $s2, 0($s0)
 move $s2, $s2
 move $s1, $s1
 li $s3, 0
-beq $s1, $s3, L515
-j L514
-L514:
+beq $s1, $s3, L131
+j L130
+L130:
 lw $s3, 0($s1)
-blt $s2, $s3, L528
-j L529
-L529:
+blt $s2, $s3, L144
+j L145
+L145:
 li $s2, 8
 move $a0, $s2
-	jal tig_allocRecord
+jal tig_allocRecord
 move $s2, $v0
 move $s2, $s2
 addi $s3, $s2, 0
 move $s3, $s3
 move $s1, $s1
 li $s4, 0
-beq $s1, $s4, L523
-j L522
-L522:
+beq $s1, $s4, L139
+j L138
+L138:
 lw $s4, 0($s1)
 sw $s4, 0($s3)
 addi $s3, $s2, 4
@@ -338,52 +347,52 @@ move $s4, $s4
 move $s0, $s0
 move $s1, $s1
 li $s5, 0
-beq $s1, $s5, L525
-j L524
-L524:
+beq $s1, $s5, L141
+j L140
+L140:
 move $a0, $s4
 move $a1, $s0
 lw $s0, 4($s1)
 move $a2, $s0
-jal L504
+jal L120
 move $s0, $v0
 move $s0, $s0
 sw $s0, 0($s3)
 move $s0, $s2
-L530:
+L146:
 move $s0, $s0
-L533:
+L149:
 move $s0, $s0
-L536:
+L152:
 move $v0, $s0
-j L566
-L534:
+j L182
+L150:
 move $s0, $s1
-j L536
-L531:
+j L152
+L147:
 move $s0, $s0
-j L533
-L513:
-jal nilerror
+j L149
+L129:
+jal tig_nilerror
 move $s2, $v0
-j L512
-L515:
-jal nilerror
+j L128
+L131:
+jal tig_nilerror
 move $s3, $v0
-j L514
-L528:
+j L130
+L144:
 li $s2, 8
 move $a0, $s2
-	jal tig_allocRecord
+jal tig_allocRecord
 move $s2, $v0
 move $s2, $s2
 addi $s3, $s2, 0
 move $s3, $s3
 move $s0, $s0
 li $s4, 0
-beq $s0, $s4, L517
-j L516
-L516:
+beq $s0, $s4, L133
+j L132
+L132:
 lw $s4, 0($s0)
 sw $s4, 0($s3)
 addi $s3, $s2, 4
@@ -392,64 +401,66 @@ lw $s4, -4($fp)
 move $s4, $s4
 move $s0, $s0
 li $s5, 0
-beq $s0, $s5, L519
-j L518
-L518:
+beq $s0, $s5, L135
+j L134
+L134:
 move $a0, $s4
 lw $s0, 4($s0)
 move $a1, $s0
 move $a2, $s1
-jal L504
+jal L120
 move $s0, $v0
 move $s0, $s0
 sw $s0, 0($s3)
 move $s0, $s2
-j L530
-L517:
-jal nilerror
+j L146
+L133:
+jal tig_nilerror
 move $s4, $v0
-j L516
-L519:
-jal nilerror
+j L132
+L135:
+jal tig_nilerror
 move $s5, $v0
-j L518
-L523:
-jal nilerror
+j L134
+L139:
+jal tig_nilerror
 move $s4, $v0
-j L522
-L525:
-jal nilerror
+j L138
+L141:
+jal tig_nilerror
 move $s5, $v0
-j L524
-L566:
+j L140
+L182:
 move $sp, $fp
-lw $ra, -4($sp)
-lw $fp, -8($sp)
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 16
 jr $ra
-L537:
-sw $ra, -4($sp)
-sw $fp, -8($sp)
-move $fp, $sp
+.globl L153
+L153:
 addi $sp, $sp, -16
-L569:
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L185:
 sw $a0, -4($fp)
 sw $a1, -8($fp)
 move $s0, $a2
 li $s1, 0
-bgt $s0, $s1, L538
-j L539
-L539:
+bgt $s0, $s1, L154
+j L155
+L155:
 li $s0, 0
 move $v0, $s0
-j L568
-L538:
+j L184
+L154:
 lw $s1, -4($fp)
 move $a0, $s1
 li $s1, 10
 div $s0, $s1
 mflo $s1
 move $a1, $s1
-jal L537
+jal L153
 move $s1, $v0
 li $s1, 10
 div $s0, $s1
@@ -460,200 +471,207 @@ sub $s0, $s0, $s1
 move $s0, $s0
 li $s1, 0
 move $a0, $s1
-la $s1, L483
+la $s1, L99
 move $a1, $s1
-	jal tig_ord
+jal tig_ord
 move $s1, $v0
 move $s1, $s1
 li $s2, 0
 move $a0, $s2
 add $s0, $s0, $s1 
 move $a1, $s0
-	jal tig_chr
+jal tig_chr
 move $s0, $v0
 move $s0, $s0
 li $s1, 0
 move $a0, $s1
 move $a1, $s0
-	jal tig_print
+jal tig_print
 move $s0, $v0
-j L539
-L568:
+j L155
+L184:
 move $sp, $fp
-lw $ra, -4($sp)
-lw $fp, -8($sp)
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 16
 jr $ra
-L505:
-sw $ra, -4($sp)
-sw $fp, -8($sp)
-move $fp, $sp
+.globl L121
+L121:
 addi $sp, $sp, -16
-L571:
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L187:
 sw $a0, -4($fp)
 sw $a1, -8($fp)
 move $s0, $a2
 li $s1, 0
-blt $s0, $s1, L544
-j L545
-L545:
+blt $s0, $s1, L160
+j L161
+L161:
 li $s1, 0
-bgt $s0, $s1, L541
-j L542
-L542:
+bgt $s0, $s1, L157
+j L158
+L158:
 li $s0, 0
 move $a0, $s0
-la $s0, L483
+la $s0, L99
 move $a1, $s0
-	jal tig_print
+jal tig_print
 move $s0, $v0
 move $s0, $s0
-L543:
+L159:
 move $s0, $s0
-L546:
+L162:
 move $v0, $s0
-j L570
-L544:
+j L186
+L160:
 li $s1, 0
 move $a0, $s1
-la $s1, L540
+la $s1, L156
 move $a1, $s1
-	jal tig_print
+jal tig_print
 move $s1, $v0
 move $a0, $fp
 li $s1, 0
 sub $s0, $s1, $s0 
 move $a1, $s0
-jal L537
+jal L153
 move $s0, $v0
 move $s0, $s0
-j L546
-L541:
+j L162
+L157:
 move $a0, $fp
 move $a1, $s0
-jal L537
+jal L153
 move $s0, $v0
 move $s0, $s0
-j L543
-L570:
+j L159
+L186:
 move $sp, $fp
-lw $ra, -4($sp)
-lw $fp, -8($sp)
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 16
 jr $ra
-L506:
-sw $ra, -4($sp)
-sw $fp, -8($sp)
-move $fp, $sp
+.globl L122
+L122:
 addi $sp, $sp, -16
-L573:
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L189:
 sw $a0, -4($fp)
 sw $a1, -8($fp)
 move $s0, $a2
 li $s1, 0
-beq $s0, $s1, L555
-j L556
-L556:
+beq $s0, $s1, L171
+j L172
+L172:
 lw $s1, -4($fp)
 move $s1, $s1
 move $s0, $s0
 li $s2, 0
-beq $s0, $s2, L548
-j L547
-L547:
+beq $s0, $s2, L164
+j L163
+L163:
 move $a0, $s1
 lw $s1, 0($s0)
 move $a1, $s1
-jal L505
+jal L121
 move $s1, $v0
 li $s1, 0
 move $a0, $s1
-la $s1, L490
+la $s1, L106
 move $a1, $s1
-	jal tig_print
+jal tig_print
 move $s1, $v0
 lw $s1, -4($fp)
 move $s1, $s1
 move $s0, $s0
 li $s2, 0
-beq $s0, $s2, L552
-j L551
-L551:
+beq $s0, $s2, L168
+j L167
+L167:
 move $a0, $s1
 lw $s0, 4($s0)
 move $a1, $s0
-jal L506
+jal L122
 move $s0, $v0
 move $s0, $s0
-L557:
+L173:
 move $v0, $s0
-j L572
-L555:
+j L188
+L171:
 li $s0, 0
 move $a0, $s0
-la $s0, L491
+la $s0, L107
 move $a1, $s0
-	jal tig_print
+jal tig_print
 move $s0, $v0
 move $s0, $s0
-j L557
-L548:
-jal nilerror
+j L173
+L164:
+jal tig_nilerror
 move $s2, $v0
-j L547
-L552:
-jal nilerror
+j L163
+L168:
+jal tig_nilerror
 move $s2, $v0
-j L551
-L572:
+j L167
+L188:
 move $sp, $fp
-lw $ra, -4($sp)
-lw $fp, -8($sp)
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 16
 jr $ra
+.globl tig_main
 tig_main:
-sw $ra, -4($sp)
-sw $fp, -8($sp)
-move $fp, $sp
 addi $sp, $sp, -16
-L575:
+sw $ra, 0($sp)
+sw $fp, 4($sp)
+move $fp, $sp
+L191:
 sw $a0, -4($fp)
 addi $s0, $fp, -8
 move $s0, $s0
 li $s1, 0
 move $a0, $s1
-	jal tig_getchar
+jal tig_getchar
 move $s1, $v0
 move $s1, $s1
 sw $s1, 0($s0)
 move $a0, $fp
-jal L503
+jal L119
 move $s0, $v0
 move $s0, $s0
 addi $s1, $fp, -8
 move $s1, $s1
 li $s2, 0
 move $a0, $s2
-	jal tig_getchar
+jal tig_getchar
 move $s2, $v0
 move $s2, $s2
 sw $s2, 0($s1)
 move $a0, $fp
-jal L503
+jal L119
 move $s1, $v0
 move $s1, $s1
 move $s2, $fp
 move $a0, $fp
 move $a1, $s0
 move $a2, $s1
-jal L504
+jal L120
 move $s0, $v0
 move $s0, $s0
 move $a0, $s2
 move $a1, $s0
-jal L506
+jal L122
 move $s0, $v0
 move $v0, $s0
-j L574
-L574:
+j L190
+L190:
 move $sp, $fp
-lw $ra, -4($sp)
-lw $fp, -8($sp)
+lw $ra, 0($sp)
+lw $fp, 4($sp)
+addi $sp, $sp, 16
 jr $ra
