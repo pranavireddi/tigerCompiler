@@ -1,0 +1,7 @@
+let var i:int :=0
+in
+    while (i<20) do
+        (i := i+1;
+        if i=5 then break);
+    i
+end

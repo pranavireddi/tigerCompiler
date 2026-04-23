@@ -28,16 +28,16 @@ struct
     base_venv needs to have bindings for predefined functions from appendix (print, flush, getchar, ord, chr, size, substring, concat, not, exit) *)
     val base_venv: enventry S.table =
         let
-            val baseFunctions = [("print", FunEntry {formals=[T.STRING], result=T.UNIT, level = Translate.outermost, label=Temp.namedLabel("print")}), 
-                           ("flush", FunEntry {formals=[], result=T.UNIT, level = Translate.outermost, label=Temp.namedLabel("flush")}),
-                           ("getchar", FunEntry {formals=[], result=T.STRING, level = Translate.outermost, label=Temp.namedLabel("getchar")}),
-                           ("ord", FunEntry {formals=[T.STRING], result=T.INT, level = Translate.outermost, label=Temp.namedLabel("ord")}),
-                           ("chr", FunEntry {formals=[T.INT], result=T.STRING, level = Translate.outermost, label=Temp.namedLabel("chr")}),
-                           ("size", FunEntry {formals=[T.STRING], result=T.INT, level = Translate.outermost, label=Temp.namedLabel("size")}),
-                           ("substring", FunEntry {formals=[T.STRING, T.INT, T.INT], result=T.STRING, level = Translate.outermost, label=Temp.namedLabel("substring")}),
-                           ("concat", FunEntry {formals=[T.STRING, T.STRING], result=T.STRING, level = Translate.outermost, label=Temp.namedLabel("concat")}),  
-                           ("not", FunEntry {formals=[T.INT], result=T.INT, level = Translate.outermost, label=Temp.namedLabel("not")}), 
-                            ("exit", FunEntry {formals=[T.INT], result=T.UNIT, level = Translate.outermost, label=Temp.namedLabel("exit")})]
+            val baseFunctions = [("print", FunEntry {formals=[T.STRING], result=T.UNIT, level = Translate.outermost, label=Temp.namedLabel("tig_print")}), 
+                           ("flush", FunEntry {formals=[], result=T.UNIT, level = Translate.outermost, label=Temp.namedLabel("tig_flush")}),
+                           ("getchar", FunEntry {formals=[], result=T.STRING, level = Translate.outermost, label=Temp.namedLabel("tig_getchar")}),
+                           ("ord", FunEntry {formals=[T.STRING], result=T.INT, level = Translate.outermost, label=Temp.namedLabel("tig_ord")}),
+                           ("chr", FunEntry {formals=[T.INT], result=T.STRING, level = Translate.outermost, label=Temp.namedLabel("tig_chr")}),
+                           ("size", FunEntry {formals=[T.STRING], result=T.INT, level = Translate.outermost, label=Temp.namedLabel("tig_size")}),
+                           ("substring", FunEntry {formals=[T.STRING, T.INT, T.INT], result=T.STRING, level = Translate.outermost, label=Temp.namedLabel("tig_substring")}),
+                           ("concat", FunEntry {formals=[T.STRING, T.STRING], result=T.STRING, level = Translate.outermost, label=Temp.namedLabel("tig_concat")}),  
+                           ("not", FunEntry {formals=[T.INT], result=T.INT, level = Translate.outermost, label=Temp.namedLabel("tig_not")}), 
+                            ("exit", FunEntry {formals=[T.INT], result=T.UNIT, level = Translate.outermost, label=Temp.namedLabel("tig_exit")})]
         in
             foldl addToSymbolTable S.empty baseFunctions
         end

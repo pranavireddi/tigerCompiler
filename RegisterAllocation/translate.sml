@@ -391,7 +391,7 @@ struct
     fun breakExp doneLabel =
         Nx(Tr.JUMP(Tr.NAME doneLabel, [doneLabel]))
 
-    fun callExp (funLabel : T.label, fLvl : level, callLvl : level, args : exp list) : exp =
+    (* fun callExp (funLabel : T.label, fLvl : level, callLvl : level, args : exp list) : exp =
         let
             val argExps = List.map unEx args
 
@@ -403,7 +403,22 @@ struct
                         followingStaticLinks(callLvl, calleeParent, Tr.TEMP Fr.FP)
         in
             Ex(Tr.CALL(Tr.NAME funLabel, staticLink :: argExps))
-        end
+        end *)
+    fun callExp (funLabel : T.label, fLvl : level, callLvl : level, args : exp list) : exp =
+    let
+        val argExps = List.map unEx args
+    in
+        case fLvl of
+            OUTERMOST =>
+                Ex(Tr.CALL(Tr.NAME funLabel, argExps))
+          | LEVEL {parent = calleeParent, ...} =>
+                let
+                    val staticLink =
+                        followingStaticLinks(callLvl, calleeParent, Tr.TEMP Fr.FP)
+                in
+                    Ex(Tr.CALL(Tr.NAME funLabel, staticLink :: argExps))
+                end
+    end
 
     fun resetFrags () =
         (frags := [];

@@ -1,0 +1,5 @@
+let
+  function f(): notatype = 1
+in
+  0
+end

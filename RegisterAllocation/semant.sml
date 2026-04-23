@@ -699,10 +699,7 @@ struct
                         val paramsNew = map checkParamQuiet params
                         fun enterParam (({name, escape, ty}, access), venvAcc) = Env.addVarVal(venvAcc, name, ty, access)
 
-                        val formalAccesses =
-                            case Tr.formals funLevel of
-                                _ :: rest => rest
-                                | [] => []
+                        val formalAccesses = Tr.formals funLevel
 
                         val paramAccessPairs = ListPair.zip(paramsNew, formalAccesses)
                         val venvWithParams = foldl enterParam venvNew paramAccessPairs
