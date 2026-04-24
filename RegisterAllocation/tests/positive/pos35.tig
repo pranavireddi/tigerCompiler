@@ -1,0 +1,11 @@
+let
+    type intArray = array of int
+    var arr := intArray[5] of 0
+in
+    arr[0] := 1;
+    arr[1] := 2;
+    arr[2] := 3;
+    arr[3] := 4;
+    arr[4] := 5;
+    arr[2]  /* return the third element */
+end

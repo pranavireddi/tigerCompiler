@@ -37,8 +37,7 @@ struct
                            ("substring", FunEntry {formals=[T.STRING, T.INT, T.INT], result=T.STRING, level = Translate.outermost, label=Temp.namedLabel("tig_substring")}),
                            ("concat", FunEntry {formals=[T.STRING, T.STRING], result=T.STRING, level = Translate.outermost, label=Temp.namedLabel("tig_concat")}),  
                            ("not", FunEntry {formals=[T.INT], result=T.INT, level = Translate.outermost, label=Temp.namedLabel("tig_not")}), 
-                            ("exit", FunEntry {formals=[T.INT], result=T.UNIT, level = Translate.outermost, label=Temp.namedLabel("tig_exit")}),
-                            ("nilerror", FunEntry {formals=[], result=T.UNIT, level = Translate.outermost, label=Temp.namedLabel("tig_nilerror")})]
+                            ("exit", FunEntry {formals=[T.INT], result=T.UNIT, level = Translate.outermost, label=Temp.namedLabel("tig_exit")})]
         in
             foldl addToSymbolTable S.empty baseFunctions
         end

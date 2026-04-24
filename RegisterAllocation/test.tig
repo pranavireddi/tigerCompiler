@@ -1,11 +1,11 @@
 let
-  var x := 5
-  function f() : int =
+  function outer(x:int) : int =
     let
-      function g() : int = x
+      function inner(y:int) : int = x + y
     in
-      g()
+      inner(5)
     end
 in
-  f()
+  if outer(10) = 15 then print("ok_static\n")
+  else print("bad_static\n")
 end
