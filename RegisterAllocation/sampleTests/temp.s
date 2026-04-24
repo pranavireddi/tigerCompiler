@@ -4,7 +4,7 @@
 .text
 .globl tig_main
 tig_main:
-addi $sp, $sp, -44
+addi $sp, $sp, -88
 sw $ra, 0($sp)
 sw $fp, 4($sp)
 sw $s0, 8($sp)
@@ -16,23 +16,23 @@ sw $s5, 28($sp)
 sw $s6, 32($sp)
 sw $s7, 36($sp)
 move $fp, $sp
-L4:
-sw $a0, 40($fp)
+L45:
+sw $a0, -44($fp)
 li $s0, 10
 li $s1, 20
-bgt $s0, $s1, L0
-j L1
-L1:
+bgt $s0, $s1, L41
+j L42
+L42:
 li $s0, 40
 move $s0, $s0
-L2:
+L43:
 move $v0, $s0
-j L3
-L0:
+j L44
+L41:
 li $s0, 30
 move $s0, $s0
-j L2
-L3:
+j L43
+L44:
 move $sp, $fp
 lw $s0, 8($sp)
 lw $s1, 12($sp)
@@ -44,5 +44,5 @@ lw $s6, 32($sp)
 lw $s7, 36($sp)
 lw $ra, 0($sp)
 lw $fp, 4($sp)
-addi $sp, $sp, 44
+addi $sp, $sp, 88
 jr $ra

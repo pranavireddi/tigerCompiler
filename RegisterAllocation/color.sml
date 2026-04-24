@@ -46,6 +46,45 @@ struct
                     SOME n => (stack := n :: !stack; simplify ())
                     | NONE => ()
 
+            and coalesce () =
+                let fun briggs (u, v) =
+                        let val uAdj = G.adj u
+                            val vAdj = G.adj v
+                            val combined = List.filter (fn n => not(G.eq(n,u)) andalso not (G.eq(n,v))) (uAdj @ vAdj)
+                        in
+                            length combined < K
+                        end
+
+                    fun george (u, v) = false
+
+                    fun canCoalesce (u, v) =
+                        not (isPrecolored u) andalso
+                        not (isPrecolored v) andalso
+                        not (G.eq(u,v)) andalso
+                        not (List.exists (fn n => G.eq(n, u)) (G.adj v)) andalso
+                        (briggs (u,v) orelse george (u,v))
+
+                    fun doCoalesce (u, v) =
+                        (List.app (fn n =>
+                            if not (List.exists (fn m => G.eq(m, n)) (G.adj u)) andalso not (G.eq(u, n))
+                            then G.mk_edge {from=u, to=n}
+                            else ()) (G.adj v);
+                        stack := v :: !stack)
+
+                    fun tryCoalesce [] = false
+                        | tryCoalesce ((u,v)::l) = 
+                                if canCoalesce (u,v) 
+                                then (doCoalesce (u,v); true)
+                                else tryCoalesce l
+
+                        and coalesce () =
+                            if tryCoalesce moves
+                            then (simplify (); coalesce ())
+                            else ()
+                in
+                    tryCoalesce moves
+                end
+
             fun select [] = ()
                 | select (n::nodes) =
                     let val used = List.foldl (fn (m,l) => 
@@ -63,7 +102,7 @@ struct
                     end
         in
             simplify();
-            (* coalesce(); *)
+            coalesce();
             print ("stack size = " ^ Int.toString(length(!stack)) ^ "\n");
             select(!stack);
             (!colorMap, !spills)

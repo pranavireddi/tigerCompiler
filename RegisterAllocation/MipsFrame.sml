@@ -255,7 +255,7 @@ ahhhh soooo many complex connections lol. *)
             val formalsAccesses = allocFormals(formals, 0)
         in
             {name = name, formals = formalsAccesses, localOffset = nextLocal}
-        end *)
+        end
 
     (* #NOTE: this is to access variables given frame pointer and access val. *)
     fun exp (accessVal, fp) = 
