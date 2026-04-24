@@ -33,7 +33,7 @@ fun emitProc out (F.ProcFrag{body,frame}) =
 
    fun emitDataSection out frags =
         let
-            val _ = TextIO.output(out, ".data\n")
+            val _ = TextIO.output(out, "\n.data\n")
         in
             app (fn frag =>
                     case frag of
@@ -43,7 +43,11 @@ fun emitProc out (F.ProcFrag{body,frame}) =
 
    fun emitTextSection out frags =
         let
+<<<<<<< HEAD
             val _ = TextIO.output(out, "\n.text\n.globl main\nmain:\n")
+=======
+                val _ = TextIO.output(out, "\n.text\n")
+>>>>>>> pranaviDev
         in
             app (fn frag =>
                     case frag of
@@ -56,6 +60,7 @@ fun emitProc out (F.ProcFrag{body,frame}) =
         in (f out before TextIO.closeOut out) 
             handle e => (TextIO.closeOut out; raise e)
        end 
+<<<<<<< HEAD
        
     fun main filename =
         (let val absyn = Parse.parse filename
@@ -67,6 +72,54 @@ fun emitProc out (F.ProcFrag{body,frame}) =
                  (fn out => (emitDataSection out frags; emitTextSection out frags))
          end)
          handle ErrorMsg.Error => print "Broken compilation \n"
+=======
+
+    fun concatFiles (outFile, files) =
+    let
+        val out = TextIO.openOut outFile
+
+        fun copyFile fname =
+            let
+                val ins = TextIO.openIn fname
+                fun loop () =
+                    case TextIO.inputLine ins of
+                        NONE => ()
+                      | SOME line => (TextIO.output(out, line); loop())
+            in
+                loop();
+                TextIO.closeIn ins
+            end
+    in
+        app copyFile files;
+        TextIO.closeOut out
+    end
+       
+(* #NOTE: takes in a .tig file, compiles it to .s, and then runs spim on the .s file. *)
+fun main filename =
+    (let
+         val absyn = Parse.parse filename
+         val _ = FindEscape.findEscape absyn
+         val frags = Semant.transProg absyn
+
+         val assemblyyyyy = filename ^ ".s"
+         val fullFile = "combinedTestFile.s"
+
+         val _ =
+             withOpenFile assemblyyyyy
+                 (fn out => (emitDataSection out frags;
+                             emitTextSection out frags))
+
+        (* #NOTE: for like the cli for spim, we need to make sure sysspim and rutime files are all in same place as .s file *)
+         val _ = concatFiles (fullFile, ["sysspim.s", "runtime-le.s", assemblyyyyy])
+
+         (* #NOTE: running spim for test file *)
+         val _ = OS.Process.system ("spim -file " ^ fullFile)
+
+     in
+         ()
+     end)
+     handle ErrorMsg.Error => print "Broken compilation time to cry :'( \n"
+>>>>>>> pranaviDev
 
 end
 

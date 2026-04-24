@@ -1,0 +1,7 @@
+/* duplicate param names */
+
+let
+  function f(x:int, x:int):int = x
+in
+  0
+end

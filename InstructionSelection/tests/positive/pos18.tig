@@ -1,0 +1,6 @@
+let
+  type rec = {a:int}
+  function f(): rec = nil
+in
+  0
+end

@@ -188,9 +188,15 @@ struct
     *)
     fun subscriptVar (arrExp : exp, indexExp : exp) : exp =
         let
-            val offset = Tr.BINOP(Tr.MUL, unEx indexExp, Tr.CONST Fr.wordSize)
 
-            (* for nil pointer checks *)
+            (* #NOTE: need to make sure that we add the +4 even for the 0th index. prev multiplication logic was missing this. *)
+            val offset =
+                Tr.BINOP(
+                    Tr.PLUS,
+                    Tr.CONST Fr.wordSize,
+                    Tr.BINOP(Tr.MUL, unEx indexExp, Tr.CONST Fr.wordSize)
+                )
+
             val oklabel = T.newLabel()
             val errlabel = T.newLabel()
             val r = T.newtemp()
@@ -203,8 +209,8 @@ struct
                     Tr.EXP(Fr.externalCall("nilerror", [])),
                     Tr.LABEL oklabel
                 ],
-                Tr.MEM(Tr.BINOP(Tr.PLUS, Tr.TEMP r, offset)) 
-                ))
+                Tr.MEM(Tr.BINOP(Tr.PLUS, Tr.TEMP r, offset))
+            ))
         end
 
     fun fieldVar (recordExp : exp, indexVal : int) : exp =
@@ -391,7 +397,7 @@ struct
     fun breakExp doneLabel =
         Nx(Tr.JUMP(Tr.NAME doneLabel, [doneLabel]))
 
-    fun callExp (funLabel : T.label, fLvl : level, callLvl : level, args : exp list) : exp =
+    (* fun callExp (funLabel : T.label, fLvl : level, callLvl : level, args : exp list) : exp =
         let
             val argExps = List.map unEx args
 
@@ -403,7 +409,22 @@ struct
                         followingStaticLinks(callLvl, calleeParent, Tr.TEMP Fr.FP)
         in
             Ex(Tr.CALL(Tr.NAME funLabel, staticLink :: argExps))
-        end
+        end *)
+    fun callExp (funLabel : T.label, fLvl : level, callLvl : level, args : exp list) : exp =
+    let
+        val argExps = List.map unEx args
+    in
+        case fLvl of
+            OUTERMOST =>
+                Ex(Tr.CALL(Tr.NAME funLabel, argExps))
+          | LEVEL {parent = calleeParent, ...} =>
+                let
+                    val staticLink =
+                        followingStaticLinks(callLvl, calleeParent, Tr.TEMP Fr.FP)
+                in
+                    Ex(Tr.CALL(Tr.NAME funLabel, staticLink :: argExps))
+                end
+    end
 
     fun resetFrags () =
         (frags := [];

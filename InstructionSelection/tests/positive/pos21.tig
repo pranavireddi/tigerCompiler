@@ -1,0 +1,6 @@
+let var x := 5
+    function f():int = x
+    function g():int = f()
+in
+    g()
+end

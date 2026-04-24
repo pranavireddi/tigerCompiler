@@ -699,10 +699,7 @@ struct
                         val paramsNew = map checkParamQuiet params
                         fun enterParam (({name, escape, ty}, access), venvAcc) = Env.addVarVal(venvAcc, name, ty, access)
 
-                        val formalAccesses =
-                            case Tr.formals funLevel of
-                                _ :: rest => rest
-                                | [] => []
+                        val formalAccesses = Tr.formals funLevel
 
                         val paramAccessPairs = ListPair.zip(paramsNew, formalAccesses)
                         val venvWithParams = foldl enterParam venvNew paramAccessPairs
@@ -790,7 +787,7 @@ struct
     let
         val tenv = Env.base_tenv
         val venv = Env.base_venv
-        val mainLabel = Temp.namedLabel "main"
+        val mainLabel = Temp.namedLabel "tig_main"
         val mainLevel = Tr.newLevel {parent = Tr.outermost, name = mainLabel, formals = []}
         val _ = Tr.resetFrags()
         val {exp = programExp, ty = programTy} = transExp (venv, tenv, exp, mainLevel, NONE)

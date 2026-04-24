@@ -1,0 +1,57 @@
+/* Comprehensive Tiger Type-Checking Test */
+
+let
+    /* 1. Mutually Recursive Types */
+    type tree = {key: int, children: treeList}
+    type treeList = {head: tree, tail: treeList}
+
+    /* 2. Mutually Recursive Functions */
+    function is_even(n: int) : int =
+        if n = 0 then 1 else is_odd(n - 1)
+
+    function is_odd(n: int) : int =
+        if n = 0 then 0 else is_even(n - 1)
+
+    /* 3. Record and Array Definitions */
+    type int_array = array of int
+    type rec = {name: string, age: int}
+
+    var my_rec := rec {name = "hello", age = 1}
+    var my_arr := int_array [10] of 0
+    var x := 5
+in
+    /* 4. Testing Loop Immutability & Scope */
+    for i := 0 to 10 do (
+         /* i := i + 1;  <- UNCOMMENT THIS to test your readOnly error */
+        
+        let 
+            var i := "shadowing is legal" 
+        in 
+            print(i) 
+        end
+    );
+
+    /* 5. Testing Break Semantics */
+    while x > 0 do (
+        if x = 2 then break;
+        x := x - 1
+    );
+
+    /* 6. Testing Record Field and Array Access Logic */
+    my_rec.age := my_arr[0] + x;
+    
+    /* 7. Testing If-Then-Else Type Consistency */
+    if my_rec.age > 20 then
+        print("Senior")
+    else
+        print("Junior");
+
+    /* 8. Testing Nil Semantics */
+    let 
+        var r : rec := nil /* Legal: nil assigned to record */
+    in
+        if r = nil then x := 1 else x := 0
+    end;
+
+    is_even(x) /* Result: 1 (True) */
+end
