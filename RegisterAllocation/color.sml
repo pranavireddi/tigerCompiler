@@ -71,16 +71,10 @@ struct
                             else ()) (G.adj v);
                         stack := v :: !stack)
 
-                    fun tryCoalesce [] = false
+                    fun tryCoalesce [] = ()
                         | tryCoalesce ((u,v)::l) = 
-                                if canCoalesce (u,v) 
-                                then (doCoalesce (u,v); true)
-                                else tryCoalesce l
-
-                        and coalesce () =
-                            if tryCoalesce moves
-                            then (simplify (); coalesce ())
-                            else ()
+                            if canCoalesce (u,v) then doCoalesce (u,v)
+                            else tryCoalesce l
                 in
                     tryCoalesce moves
                 end
@@ -103,6 +97,7 @@ struct
         in
             simplify();
             coalesce();
+            simplify();
             print ("stack size = " ^ Int.toString(length(!stack)) ^ "\n");
             select(!stack);
             (!colorMap, !spills)
