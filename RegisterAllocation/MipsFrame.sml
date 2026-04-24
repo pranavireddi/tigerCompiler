@@ -227,26 +227,6 @@ ahhhh soooo many complex connections lol. *)
         - 4+         : arrive in caller frame, keep in caller frame (pos offset from current FP)
     *)
 
-<<<<<<< HEAD
-    fun newFrame({name, formals}) = 
-        let
-            val nextLocal = ref 0
-
-            fun alloc (esc, idx) = 
-                if idx < k then
-                    if esc then 
-                        (nextLocal := !nextLocal - 4;
-                        InFrame (!nextLocal))
-                    else 
-                        InReg(Temp.newtemp())
-                else (* 4+th params are passed in the caller's frame so have positive offset (upward from current fp) *)
-                    InFrame ((idx - 4) * 4) (* offset 0 for 5th, 4 for 6th, etc... *)
-
-            fun allocFormals ([], idx) = []
-              | allocFormals (formal :: rest, idx) = alloc(formal, idx) :: allocFormals(rest, idx + 1)
-
-            val formalsAccesses = allocFormals (formals, 0)
-=======
     val ARGREGS = 4
 
     fun newFrame ({name, formals} : {name: Temp.label, formals: bool list}) =
@@ -273,7 +253,6 @@ ahhhh soooo many complex connections lol. *)
                     alloc(formal, idx) :: allocFormals(rest, idx + 1)
 
             val formalsAccesses = allocFormals(formals, 0)
->>>>>>> pranaviDev
         in
             {name = name, formals = formalsAccesses, localOffset = nextLocal}
         end
@@ -284,10 +263,5 @@ ahhhh soooo many complex connections lol. *)
             InFrame offset => Tr.MEM(Tr.BINOP(Tr.PLUS, fp, Tr.CONST offset))
           | InReg temp => Tr.TEMP(temp)
 
-<<<<<<< HEAD
-    fun externalCall (func, args) = Tr.CALL(Tr.NAME(Temp.namedLabel func), args)
-
-=======
->>>>>>> pranaviDev
 end
 

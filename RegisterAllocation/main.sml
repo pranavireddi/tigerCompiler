@@ -43,11 +43,7 @@ fun emitProc out (F.ProcFrag{body,frame}) =
 
    fun emitTextSection out frags =
         let
-<<<<<<< HEAD
-            val _ = TextIO.output(out, "\n.text\n.globl main\nmain:\n")
-=======
                 val _ = TextIO.output(out, "\n.text\n")
->>>>>>> pranaviDev
         in
             app (fn frag =>
                     case frag of
@@ -60,19 +56,6 @@ fun emitProc out (F.ProcFrag{body,frame}) =
         in (f out before TextIO.closeOut out) 
             handle e => (TextIO.closeOut out; raise e)
        end 
-<<<<<<< HEAD
-       
-    fun main filename =
-        (let val absyn = Parse.parse filename
-             val _ = FindEscape.findEscape absyn
-             (* val _ = PrintEscape.printEscapes absyn *)
-             val frags = Semant.transProg absyn
-         in
-             withOpenFile (filename ^ ".s")
-                 (fn out => (emitDataSection out frags; emitTextSection out frags))
-         end)
-         handle ErrorMsg.Error => print "Broken compilation \n"
-=======
 
     fun concatFiles (outFile, files) =
     let
@@ -119,7 +102,6 @@ fun main filename =
          ()
      end)
      handle ErrorMsg.Error => print "Broken compilation time to cry :'( \n"
->>>>>>> pranaviDev
 
 end
 
