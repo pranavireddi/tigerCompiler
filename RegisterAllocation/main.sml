@@ -57,16 +57,32 @@ fun emitProc out (F.ProcFrag{body,frame}) =
             handle e => (TextIO.closeOut out; raise e)
        end 
        
-    fun main filename =
-        (let val absyn = Parse.parse filename
-             val _ = FindEscape.findEscape absyn
-             (* val _ = PrintEscape.printEscapes absyn *)
-             val frags = Semant.transProg absyn
-         in
-             withOpenFile (filename ^ ".s")
-                 (fn out => (emitDataSection out frags; emitTextSection out frags))
-         end)
-         handle ErrorMsg.Error => print "Broken compilation \n"
+(* #NOTE: takes in a .tig file, compiles it to .s, and then runs spim on the .s file. *)
+fun main filename =
+    (let
+         val absyn = Parse.parse filename
+         val _ = FindEscape.findEscape absyn
+         val frags = Semant.transProg absyn
+
+         val assemblyyyyy = filename ^ ".s"
+         val fullFile = "combinedTestFile.s"
+
+         val _ =
+             withOpenFile assemblyyyyy
+                 (fn out => (emitDataSection out frags;
+                             emitTextSection out frags))
+
+        (* #NOTE: for like the cli for spim, we need to make sure sysspim and rutime files are all in same place as .s file *)
+         val _ = concatFiles (fullFile, ["sysspim.s", "runtime-le.s", assemblyyyyy])
+
+         (* #NOTE: running spim for test file *)
+         val _ = OS.Process.system ("spim -file " ^ fullFile)
+         (* val _ = OS.Process.system ("printf \"load \\\"" ^ fullFile ^ "\\\"\\nrun\\nprint_all_regs\\n\" | spim") *)
+
+     in
+         ()
+     end)
+     handle ErrorMsg.Error => print "Broken compilation time to cry :'( \n"
 
 end
 

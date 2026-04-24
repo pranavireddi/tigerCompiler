@@ -6,6 +6,10 @@ let
     var a := intArray[5] of 0
     function f():int = a[i]
 in
+<<<<<<< Updated upstream
     a[4] := 4;
+=======
+    a[3] := 3;
+>>>>>>> Stashed changes
     f()
 end
