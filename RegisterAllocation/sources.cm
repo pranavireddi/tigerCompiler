@@ -5,6 +5,7 @@ assem.sml
 canon.sml
 codegen.sig
 color.sml
+colorTest.sml
 env.sml
 errormsg.sml
 findescape.sml

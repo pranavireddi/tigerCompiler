@@ -89,9 +89,9 @@ struct
                                 src=[munchExp e2, munchExp e1],
                                 dst= [] ,jump=NONE})
                 | munchStm(T.MOVE(T.TEMP i, e)) =
-                    emit(A.MOVE{assem="move `d0, `s0\n",
-                                src=munchExp e,
-                                dst=i})
+                    emit(A.OPER{assem="move `d0, `s0\n",
+                                src=[munchExp e],
+                                dst=[i],jump=NONE})
                 | munchStm(T.LABEL lab) =
                     emit(A.LABEL{assem=Symbol.name lab ^ ":\n", lab=lab})
                 | munchStm (T.EXP e) = 

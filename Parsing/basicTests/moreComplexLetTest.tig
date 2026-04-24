@@ -1,0 +1,7 @@
+let
+  type t = int
+  var x := 1
+  function f(a:int):int = a + x
+in
+  f(2)
+end

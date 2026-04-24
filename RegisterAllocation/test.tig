@@ -1,11 +1,24 @@
 let
   function outer(x:int) : int =
     let
-      function inner(y:int) : int = x + y
+      function addx(y:int) : int = x + y
+
+      function countDown(n:int) : int =
+        if n = 0 then x
+        else countDown(n - 1)
+
+      function even(n:int) : int =
+        if n = 0 then x
+        else odd(n - 1)
+
+      function odd(n:int) : int =
+        if n = 0 then 0
+        else even(n - 1)
+
     in
-      inner(5)
+      addx(5) + countDown(3) + even(4)
     end
 in
-  if outer(10) = 15 then print("ok_static\n")
-  else print("bad_static\n")
+  if outer(10) = 35 then print("yipppee nested func and mut rec works!\n")
+  else print("it's cooked\n")
 end
