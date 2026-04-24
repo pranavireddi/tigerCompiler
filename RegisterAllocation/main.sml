@@ -15,8 +15,8 @@ fun emitProc out (F.ProcFrag{body,frame}) =
             val stms' = Canon.traceSchedule(Canon.basicBlocks stms)
             val instrs = List.concat(map (MipsGen.codegen frame) stms')
             val (flowgraph, nodes) = MakeGraph.instrs2graph instrs
-            val (igraph, _) = Liveness.interferenceGraph flowgraph
-            val _ = Liveness.show(TextIO.stdOut, igraph)
+            (* val (igraph, _) = Liveness.interferenceGraph flowgraph *)
+            (* val _ = Liveness.show(TextIO.stdOut, igraph) *)
             val instrs = MipsFrame.procEntryExit3(frame, instrs)
             val (instrs, allocation) = RegAlloc.alloc(instrs, frame)
             val tempToString = fn t =>
@@ -60,7 +60,7 @@ fun emitProc out (F.ProcFrag{body,frame}) =
     fun main filename =
         (let val absyn = Parse.parse filename
              val _ = FindEscape.findEscape absyn
-             val _ = PrintEscape.printEscapes absyn
+             (* val _ = PrintEscape.printEscapes absyn *)
              val frags = Semant.transProg absyn
          in
              withOpenFile (filename ^ ".s")

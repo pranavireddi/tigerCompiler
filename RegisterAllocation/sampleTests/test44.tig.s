@@ -16,18 +16,16 @@ sw $s5, 28($sp)
 sw $s6, 32($sp)
 sw $s7, 36($sp)
 move $fp, $sp
-L1:
+L225:
 sw $a0, -44($fp)
-li $s0, 10
-move $a0, $s0
 li $s0, 0
-move $a1, $s0
-jal tig_initArray
-move $s0, $v0
 move $s0, $s0
+li $s0, 0
+move $s0, $s0
+li $s0, 0
 move $v0, $s0
-j L0
-L0:
+j L224
+L224:
 move $sp, $fp
 lw $s0, 8($sp)
 lw $s1, 12($sp)

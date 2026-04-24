@@ -9,15 +9,15 @@ fun run file =
 (* helper to generate test1.tig ... test48.tig *)
 fun makeTests n =
   List.tabulate (n, fn i =>
-      "tests/positive/pos" ^ Int.toString(i+1) ^ ".tig");
+      "sampleTests/test" ^ Int.toString(i+1) ^ ".tig");
 
 fun makeTestsneg n =
   List.tabulate (n, fn i =>
       "tests/negative/neg" ^ Int.toString(i+1) ^ ".tig");
 
-val numberedTests = makeTests 33;
+val numberedTests = makeTests 48;
 val negTests = makeTestsneg 38;
 
-val allTests = negTests @ numberedTests;
+val allTests = numberedTests;
 
 List.app run allTests;

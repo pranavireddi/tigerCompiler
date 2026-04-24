@@ -16,18 +16,28 @@ sw $s5, 28($sp)
 sw $s6, 32($sp)
 sw $s7, 36($sp)
 move $fp, $sp
-L1:
+L233:
 sw $a0, -44($fp)
-li $s0, 10
-move $a0, $s0
 li $s0, 0
-move $a1, $s0
-jal tig_initArray
-move $s0, $v0
 move $s0, $s0
-move $v0, $s0
-j L0
-L0:
+li $s1, 0
+beq $s0, $s1, L228
+j L229
+L229:
+li $s1, 1
+move $s1, $s1
+li $s2, 0
+bne $s0, $s2, L230
+j L231
+L231:
+li $s0, 0
+move $s1, $s0
+L230:
+move $v0, $s1
+j L232
+L228:
+j L229
+L232:
 move $sp, $fp
 lw $s0, 8($sp)
 lw $s1, 12($sp)
