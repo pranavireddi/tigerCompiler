@@ -1,0 +1,10 @@
+let var x := 5
+    function f():int =
+        let var y := 2
+            function g(z:int):int = x+z
+        in
+            g(y)
+        end
+in
+    f()
+end

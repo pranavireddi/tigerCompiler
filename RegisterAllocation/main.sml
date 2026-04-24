@@ -56,6 +56,26 @@ fun emitProc out (F.ProcFrag{body,frame}) =
         in (f out before TextIO.closeOut out) 
             handle e => (TextIO.closeOut out; raise e)
        end 
+
+    fun concatFiles (outFile, files) =
+    let
+        val out = TextIO.openOut outFile
+
+        fun copyFile fname =
+            let
+                val ins = TextIO.openIn fname
+                fun loop () =
+                    case TextIO.inputLine ins of
+                        NONE => ()
+                      | SOME line => (TextIO.output(out, line); loop())
+            in
+                loop();
+                TextIO.closeIn ins
+            end
+    in
+        app copyFile files;
+        TextIO.closeOut out
+    end
        
 (* #NOTE: takes in a .tig file, compiles it to .s, and then runs spim on the .s file. *)
 fun main filename =
