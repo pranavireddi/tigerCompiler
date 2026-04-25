@@ -46,6 +46,56 @@ struct
                     SOME n => (stack := n :: !stack; simplify ())
                     | NONE => ()
 
+            and coalesce () =
+                let fun adjSet (u, v) =
+                        List.exists (fn n => G.eq(n, v)) (G.adj u)
+
+                    fun degree u =
+                        length (G.adj u)
+                
+                    fun briggs (u, v) =
+                        let val uAdj = G.adj u
+                            val vAdj = G.adj v
+                            val combined = List.filter
+                                (fn n => not(G.eq(n,u)) andalso not(G.eq(n,v)))
+                                (uAdj @ vAdj)
+                            val deduped = List.foldl
+                                (fn (n, acc) =>
+                                    if List.exists (fn m => G.eq(m,n)) acc
+                                    then acc else n::acc)
+                                [] combined
+                        in
+                            length deduped < K
+                        end
+
+                    fun george (u, v) =
+                        List.all
+                            (fn t =>
+                                adjSet (t, u) orelse isPrecolored t orelse degree t < K)
+                            (G.adj v)
+                            
+                    fun canCoalesce (u, v) =
+                        not (isPrecolored u) andalso
+                        not (isPrecolored v) andalso
+                        not (G.eq(u,v)) andalso
+                        not (List.exists (fn n => G.eq(n, u)) (G.adj v)) andalso
+                        (briggs (u,v) orelse george (u,v))
+
+                    fun doCoalesce (u, v) =
+                        (List.app (fn n =>
+                            if not (List.exists (fn m => G.eq(m, n)) (G.adj u)) andalso not (G.eq(u, n))
+                            then G.mk_edge {from=u, to=n}
+                            else ()) (G.adj v);
+                        stack := v :: !stack)
+
+                    fun tryCoalesce [] = ()
+                        | tryCoalesce ((u,v)::l) = 
+                            if canCoalesce (u,v) then doCoalesce (u,v)
+                            else tryCoalesce l
+                in
+                    tryCoalesce moves
+                end
+
             fun select [] = ()
                 | select (n::nodes) =
                     let val used = List.foldl (fn (m,l) => 
@@ -56,14 +106,15 @@ struct
                
                         val avail = List.find (fn reg => not (List.exists (fn m => m = reg) used)) registers
                     in
-                        case avail of
+                        (case avail of
                             SOME color => colorMap := Temp.Table.enter(!colorMap, gtemp n, color)
-                            | NONE => spills := gtemp n :: !spills;
+                            | NONE => spills := gtemp n :: !spills);
                         select nodes
                     end
         in
             simplify();
-            (* coalesce(); *)
+            coalesce();
+            simplify();
             print ("stack size = " ^ Int.toString(length(!stack)) ^ "\n");
             select(!stack);
             (!colorMap, !spills)

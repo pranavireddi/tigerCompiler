@@ -96,7 +96,7 @@ fun main filename =
          val _ = concatFiles (fullFile, ["sysspim.s", "runtime-le.s", assemblyyyyy])
 
          (* #NOTE: running spim for test file *)
-         val _ = OS.Process.system ("spim -file " ^ fullFile)
+         (* val _ = OS.Process.system ("spim -file " ^ fullFile) *)
 
      in
          ()
