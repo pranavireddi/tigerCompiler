@@ -39,6 +39,8 @@ fun eof() =
 <COMMENTS>"*/"	=> (commentNestingDepth := !commentNestingDepth - 1; if !commentNestingDepth = 0 then (YYBEGIN INITIAL; continue()) else continue());
 <COMMENTS>.    => (continue());
 
+<STRING>\n => (stringBuf := !stringBuf ^ "\n"; continue());
+
 <INITIAL>"\"" => (stringBuf := ""; stringStartPos := yypos; inString := true; YYBEGIN STRING; continue());
 <STRING>"\"" => (inString := false; YYBEGIN INITIAL; Tokens.STRING(!stringBuf, !stringStartPos, yypos+1));
 

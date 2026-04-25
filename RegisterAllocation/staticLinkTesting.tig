@@ -1,0 +1,26 @@
+let
+  function outer(a:int) : int =
+    let
+      var b := 20
+
+      function middle(c:int) : int =
+        let
+          var d := 40
+
+          function inner(e:int) : int =
+            a + b + c + d + e
+        in
+          inner(5)
+        end
+    in
+      middle(30)
+    end
+
+  function normal(x:int, y:int) : int =
+    x + y
+
+in
+  if outer(10) = 105 & normal(ord("A"), size("hello")) = 70
+  then print("STATIC LINKING WORKS!\n")
+  else print("static linking doesn't work\n")
+end

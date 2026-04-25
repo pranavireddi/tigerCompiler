@@ -1,0 +1,12 @@
+let
+  function a(n:int): int =
+    if n = 0 then 0 else b(n-1)
+
+  function b(n:int): int =
+    if n = 0 then 0 else c(n-1)
+
+  function c(n:int): int =
+    if n = 0 then 0 else a(n-1)
+in
+  a(10)
+end

@@ -1,0 +1,6 @@
+let
+  function f(): int = 1
+  function f(): int = 2
+in
+  f()
+end

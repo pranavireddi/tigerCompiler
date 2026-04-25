@@ -1,0 +1,6 @@
+let
+  type arr = array of int
+  var a:arr := nil
+in
+  a
+end

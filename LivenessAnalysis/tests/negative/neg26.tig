@@ -1,0 +1,5 @@
+let
+  function f(): int = nil
+in
+  0
+end

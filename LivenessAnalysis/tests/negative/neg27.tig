@@ -1,0 +1,6 @@
+let
+  function f() =
+    10
+in
+  f()
+end

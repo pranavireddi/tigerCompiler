@@ -1,0 +1,6 @@
+/* test: break inside function with no loop */
+let
+    function f() = break
+in
+    f()
+end

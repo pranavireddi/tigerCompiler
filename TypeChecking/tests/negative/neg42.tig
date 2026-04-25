@@ -1,0 +1,6 @@
+let
+  function f() = g()
+  function g() = 1
+in
+  f()
+end

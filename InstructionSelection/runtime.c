@@ -17,6 +17,11 @@ int *allocRecord(int size)
  return a;
 }
 
+void *nilerror(){
+  fprintf(stderr, "Error: nil object reference\n");
+  exit(1);
+}
+
 struct string {int length; unsigned char chars[1];};
 
 int stringEqual(struct string *s, struct string *t)

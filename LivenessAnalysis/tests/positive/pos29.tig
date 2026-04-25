@@ -1,0 +1,9 @@
+/* escaping rec */
+
+let
+    type rec = {a:int}
+    var r := rec{a=1}
+    function f():int = r.a
+in
+    f()
+end

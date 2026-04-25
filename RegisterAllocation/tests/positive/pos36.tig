@@ -1,0 +1,9 @@
+let
+  var a := array [5] of 0
+
+  function L0() =
+    a[4]
+
+in
+  L0()
+end

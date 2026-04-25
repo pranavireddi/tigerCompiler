@@ -1,0 +1,65 @@
+let
+  type pair = {x:int, y:int}
+  type intArray = array of int
+
+  function fact(n:int) : int =
+    if n = 0 then 1 else n * fact(n - 1)
+
+  function sumArray(a:intArray, n:int) : int =
+    let
+      var i := 0
+      var total := 0
+    in
+      while i < n do
+        (total := total + a[i];
+         i := i + 1);
+      total
+    end
+
+  function makePair(a:int, b:int) : pair =
+    pair{x=a, y=b}
+
+  function staticTest(a:int) : int =
+    let
+      var b := 20
+      function inner(c:int) : int =
+        a + b + c
+    in
+      inner(30)
+    end
+
+  function manyTemps(a:int,b:int,c:int,d:int,e:int,f:int,g:int,h:int,i:int,j:int) : int =
+    let
+      var t1 := a + b
+      var t2 := c + d
+      var t3 := e + f
+      var t4 := g + h
+      var t5 := i + j
+      var t6 := t1 * t2
+      var t7 := t3 * t4
+      var t8 := t6 + t7
+      var t9 := t8 - t5
+    in
+      t9
+    end
+
+  var arr := intArray[5] of 0
+  var p := makePair(7, 8)
+
+in
+  arr[0] := 1;
+  arr[1] := 2;
+  arr[2] := 3;
+  arr[3] := 4;
+  arr[4] := 5;
+
+  if fact(5) = 120
+     & sumArray(arr, 5) = 15
+     & p.x + p.y = 15
+     & staticTest(10) = 60
+     & manyTemps(1,2,3,4,5,6,7,8,9,10) = 167
+     & size("hello") = 5
+     & ord("A") = 65
+  then print("ok_compiler\n")
+  else print("bad_compiler\n")
+end

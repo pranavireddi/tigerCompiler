@@ -1,0 +1,16 @@
+let
+  function manyTemps(a:int,b:int,c:int) : int =
+    let
+      var t1 := a + b
+      var t2 := b + c
+      var t3 := t1 * t2
+      var t4 := t3 + a
+      var t5 := t4 - c
+    in
+      t5
+    end
+in
+  if manyTemps(1,2,3) = 13
+  then print("ok_regalloc_small\n")
+  else print("bad_regalloc_small\n")
+end

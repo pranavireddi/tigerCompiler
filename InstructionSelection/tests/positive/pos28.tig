@@ -1,0 +1,12 @@
+/* same as 27 except var is renamed to y */
+
+let var y := 5
+    function f():int =
+        let var y := 2
+            function g(y:int):int = y
+        in
+            g(y)
+        end
+in
+    f()
+end

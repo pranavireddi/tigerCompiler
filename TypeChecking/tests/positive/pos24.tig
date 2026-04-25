@@ -1,0 +1,6 @@
+let
+  function f():int = g()
+  function g():int = 1
+in
+  f()
+end
